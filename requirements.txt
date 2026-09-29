@@ -1,0 +1,25 @@
+# === Frontend ===
+streamlit==1.39.0
+pandas==2.2.3
+plotly==5.24.1
+
+# === Exportación Excel ===
+openpyxl==3.1.5
+
+# === AWS ===
+boto3==1.35.36
+botocore==1.35.36
+
+# === Azure ===
+azure-identity==1.19.0
+azure-mgmt-resource==23.2.0
+azure-mgmt-costmanagement==4.0.1
+azure-mgmt-compute==33.0.0
+azure-mgmt-network==28.0.0
+azure-mgmt-advisor==9.0.0
+azure-mgmt-monitor==6.0.2
+azure-mgmt-security==7.0.0
+azure-mgmt-subscription==3.1.1
+azure-mgmt-reservations==2.3.0
+azure-mgmt-resourcegraph==8.0.0
+azure-mgmt-recoveryservices==3.0.0
