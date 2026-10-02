@@ -1,24 +1,35 @@
-# === Frontend ===
+# ============================================================
+# PLAN-ADM — dependencias
+# ============================================================
+# Modulo actual: Login multicloud + dashboard de salud publica.
+# Los SDK de cada nube se iran agregando al reconstruir su
+# integracion real (descubrimiento de recursos) modulo a modulo.
+
+# === Frontend / core ===
 streamlit==1.39.0
 pandas==2.2.3
-plotly==5.24.1
-openpyxl==3.1.5
-requests==2.33.0
+requests==2.33.1
 
-# === AWS ===
+# === Exportacion (se usara en modulos siguientes) ===
+openpyxl==3.1.5
+
+# === Azure (login interactivo real: azure_auth.py) ===
+azure-identity==1.19.0
+azure-mgmt-subscription==3.1.1
+azure-mgmt-resource==23.2.0
+
+# === AWS (login SSO real: aws_auth.py) ===
 boto3==1.35.36
 botocore==1.35.36
 
-# === Azure ===
-azure-identity==1.19.0
-azure-mgmt-resource==23.2.0
-azure-mgmt-costmanagement==4.0.1
-azure-mgmt-compute==33.0.0
-azure-mgmt-network==28.0.0
-azure-mgmt-advisor==9.0.0
-azure-mgmt-monitor==6.0.2
-azure-mgmt-security==7.0.0
-azure-mgmt-subscription==3.1.1
-azure-mgmt-recoveryservices==3.0.0
-azure-mgmt-storage==21.2.1
-azure-mgmt-containerservice==31.0.0
+# === SDKs por nube (se habilitaran al integrar cada login real) ===
+# --- Azure (adicionales futuros) ---
+# azure-mgmt-costmanagement==4.0.1
+# --- GCP ---
+# google-auth==2.35.0
+# google-cloud-resource-manager==1.13.0
+# --- OCI ---
+# oci==2.135.0
+# --- IBM Cloud ---
+# ibm-platform-services==0.59.0
+# ibm-cloud-sdk-core==3.22.0
