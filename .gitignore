@@ -1,0 +1,16 @@
+# Sesion persistida (contiene tokens) — NUNCA commitear
+.plan_adm_session.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Diagnostico temporal
+_diag_*.py
+
+# Streamlit secrets
+.streamlit/secrets.toml

@@ -52,11 +52,20 @@ class AzureAuthError(Exception):
 class Tenant:
     id: str
     display_name: str = ""
+    default_domain: str = ""
+
+    @property
+    def name(self) -> str:
+        """Nombre amigable del tenant (sin el ID)."""
+        return self.display_name or self.default_domain or self.id
 
     @property
     def label(self) -> str:
-        name = self.display_name or self.id
-        return f"{name} · {self.id}"
+        """Etiqueta para selector: prioriza el nombre; el ID queda como apoyo."""
+        name = self.name
+        if name and name != self.id:
+            return name
+        return self.id
 
 
 @dataclass
@@ -80,7 +89,9 @@ def _cache_opts() -> "TokenCachePersistenceOptions":
     return TokenCachePersistenceOptions(name="plan-adm-azure")
 
 
-def _build_credential(prompt_callback=None, record=None):
+def _build_credential(prompt_callback=None, record=None,
+                      disable_automatic_authentication=False,
+                      tenant_id=None):
     """Crea una DeviceCodeCredential (flujo de codigo de dispositivo).
 
     Device code NO usa servidor de redirect local, por lo que elimina de raiz
@@ -91,11 +102,18 @@ def _build_credential(prompt_callback=None, record=None):
     - additionally_allowed_tenants=["*"] -> la MISMA credencial podra emitir
       tokens para el tenant que se elija luego en el panel, sin reautenticar.
     - authentication_record (si existe)  -> reanuda sesion desde la cache.
+    - disable_automatic_authentication=True -> get_token NO abre el device code
+      si la cache expiro: lanza AuthenticationRequiredError. Imprescindible para
+      la restauracion silenciosa en el arranque (si no, bloquea pidiendo codigo).
     """
     kwargs = dict(
         cache_persistence_options=_cache_opts(),
         additionally_allowed_tenants=["*"],
     )
+    if tenant_id:
+        kwargs["tenant_id"] = tenant_id
+    if disable_automatic_authentication:
+        kwargs["disable_automatic_authentication"] = True
     if prompt_callback is not None:
         kwargs["prompt_callback"] = prompt_callback
     if record is not None:
@@ -121,8 +139,13 @@ class AzureDeviceAuth:
         return bool(self.user_code) and not self.error
 
 
-def begin_device_login() -> AzureDeviceAuth:
+def begin_device_login(tenant_id: Optional[str] = None) -> AzureDeviceAuth:
     """Paso 1: inicia el device code en un hilo y devuelve el codigo a mostrar.
+
+    tenant_id: si se indica, la autenticacion se hace CONTRA ESE TENANT. Esto
+    fuerza el flujo de MFA / acceso condicional propio de ese tenant (necesario
+    cuando un tenant exige un challenge adicional, p. ej. AADSTS50158). Si es
+    None, autentica contra el home tenant del usuario.
 
     El login real se completa en segundo plano; se consulta con finish_login().
     Nunca lanza: los errores quedan en .error.
@@ -144,8 +167,18 @@ def begin_device_login() -> AzureDeviceAuth:
 
     def _worker():
         try:
-            cred = _build_credential(prompt_callback=_prompt)
-            record = cred.authenticate(scopes=[_ARM_SCOPE])
+            # disable_automatic_authentication=True evita que un get_token
+            # silencioso posterior (p. ej. a Graph para otro tenant) reabra el
+            # device code y bloquee. El authenticate() de abajo es EXPLICITO y
+            # no se ve afectado por este flag: muestra el codigo normalmente.
+            cred = _build_credential(prompt_callback=_prompt,
+                                     disable_automatic_authentication=True,
+                                     tenant_id=tenant_id)
+            # authenticate contra el tenant indicado (satisface su MFA propio).
+            auth_kwargs = {"scopes": [_ARM_SCOPE]}
+            if tenant_id:
+                auth_kwargs["tenant_id"] = tenant_id
+            record = cred.authenticate(**auth_kwargs)
             da._result = {"credential": cred, "record": record}
         except Exception as exc:  # noqa: BLE001
             da._result = {"error": f"{type(exc).__name__}: {exc}"}
@@ -199,19 +232,124 @@ def finish_login(da: AzureDeviceAuth, wait: int = 2) -> AzureConnection:
     return conn
 
 
-def _list_tenants(credential) -> List[Tenant]:
-    """Lista los tenants visibles para el usuario autenticado.
+def restore_connection(record_serialized: str) -> AzureConnection:
+    """Reanuda la sesion de Azure desde un AuthenticationRecord serializado.
 
-    Usa el token ya emitido (home tenant); no requiere login adicional.
+    Reconstruye la DeviceCodeCredential apoyandose en la cache de token
+    persistente, SIN reabrir el navegador. Verifica que el token siga vigente
+    emitiendo uno silenciosamente y re-lee los tenants. Nunca lanza.
+    """
+    conn = AzureConnection()
+    if not _AZURE_AVAILABLE:
+        conn.error = "azure-identity no esta instalado."
+        return conn
+    try:
+        from azure.identity import AuthenticationRecord
+        record = AuthenticationRecord.deserialize(record_serialized)
+        # disable_automatic_authentication=True: si la cache expiro, get_token
+        # LANZA en vez de abrir el device code (nunca bloquea el arranque).
+        cred = _build_credential(record=record,
+                                 disable_automatic_authentication=True)
+        # Validar que la sesion sigue viva (token desde cache, sin navegador).
+        cred.get_token(_ARM_SCOPE)
+        conn.credential = cred
+        conn.record = record
+        conn.account_hint = getattr(record, "username", "") or ""
+        conn.tenants = _list_tenants(cred)
+    except Exception as exc:  # noqa: BLE001
+        # Incluye AuthenticationRequiredError (cache vencida): se trata como
+        # 'no hay sesion valida' y app.py pedira login limpio, sin colgarse.
+        conn.error = f"{type(exc).__name__}: {exc}"
+    return conn
+
+
+_GRAPH_SCOPE = "https://graph.microsoft.com/.default"
+
+
+def _tenant_name_from_graph(credential, tenant_id: str) -> tuple:
+    """Obtiene (display_name, default_domain) del tenant via Microsoft Graph.
+
+    El endpoint ARM (tenants.list) de azure-mgmt-subscription 3.x SOLO expone
+    el GUID (no el nombre). El nombre real de la organizacion vive en Graph:
+    GET /v1.0/organization  ->  value[0].displayName / verifiedDomains.
+
+    Se emite un token de Graph PARA ESE tenant (la credencial admite todos los
+    tenants por additionally_allowed_tenants=['*']). Nunca lanza: ante cualquier
+    fallo devuelve ('', '').
+    """
+    try:
+        import json
+        import urllib.request
+
+        # Token silencioso para Graph en ese tenant. Si requiere interaccion
+        # (AuthenticationRequiredError, por disable_automatic_authentication),
+        # el except de abajo lo captura y se cae al GUID — NUNCA bloquea.
+        token = credential.get_token(_GRAPH_SCOPE, tenant_id=tenant_id).token
+        req = urllib.request.Request(
+            "https://graph.microsoft.com/v1.0/organization"
+            "?$select=displayName,verifiedDomains",
+            headers={"Authorization": f"Bearer {token}",
+                     "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:  # noqa: S310
+            payload = json.loads(resp.read().decode("utf-8"))
+        orgs = payload.get("value", [])
+        if not orgs:
+            return "", ""
+        org = orgs[0]
+        name = (org.get("displayName") or "").strip()
+        domain = ""
+        for d in org.get("verifiedDomains", []):
+            if d.get("isDefault"):
+                domain = (d.get("name") or "").strip()
+                break
+        return name, domain
+    except Exception:  # noqa: BLE001
+        return "", ""
+
+
+def list_subscriptions(credential, tenant_id: Optional[str] = None) -> list:
+    """Lista las suscripciones accesibles (opcionalmente filtradas por tenant).
+
+    Devuelve [{'subscriptionId','displayName','state','tenantId'}]. Usa el token
+    ya disponible; con disable_automatic_authentication NO reabre navegador: si
+    requiere interaccion, devuelve lista vacia. Nunca lanza.
+    """
+    if not _AZURE_AVAILABLE:
+        return []
+    try:
+        client = SubscriptionClient(credential)
+        out = []
+        for s in client.subscriptions.list():
+            tid = getattr(s, "tenant_id", "") or ""
+            if tenant_id and tid and tid != tenant_id:
+                continue
+            out.append({
+                "subscriptionId": getattr(s, "subscription_id", "") or "",
+                "displayName": getattr(s, "display_name", "") or "",
+                "state": str(getattr(s, "state", "") or ""),
+                "tenantId": tid,
+            })
+        return out
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _list_tenants(credential) -> List[Tenant]:
+    """Lista los tenants visibles para el usuario autenticado, con su nombre.
+
+    El endpoint ARM solo entrega el GUID, asi que el nombre legible se resuelve
+    contra Microsoft Graph por tenant. Si Graph no responde para alguno, se deja
+    el GUID como etiqueta. Usa tokens ya disponibles; no reabre el navegador.
     """
     client = SubscriptionClient(credential)
     tenants: List[Tenant] = []
     for t in client.tenants.list():
-        tenants.append(Tenant(
-            id=getattr(t, "tenant_id", "") or "",
-            display_name=(getattr(t, "display_name", None)
-                          or getattr(t, "default_domain", None) or ""),
-        ))
+        tid = getattr(t, "tenant_id", "") or getattr(t, "id", "") or ""
+        if not tid:
+            continue
+        name, domain = _tenant_name_from_graph(credential, tid)
+        tenants.append(Tenant(id=tid, display_name=name, default_domain=domain))
     return tenants
 
 
