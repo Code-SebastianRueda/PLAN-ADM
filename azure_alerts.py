@@ -277,6 +277,44 @@ def _arm_post(credential, sub_id: str, url: str, body: dict) -> dict:
     raise HttpResponseError(response=resp)
 
 
+def accessible_subscriptions(credential, sub_ids: list) -> set:
+    """Devuelve el conjunto de subscriptionIds a los que el usuario SÍ tiene
+    acceso de lectura, consultando Resource Graph una sola vez (ARG solo
+    devuelve recursos de subs accesibles). Si una sub no aparece, se asume sin
+    acceso. Si ARG falla, devuelve todas (no bloquear por un fallo de ARG)."""
+    if not sub_ids:
+        return set()
+    try:
+        url = ("https://management.azure.com/providers/Microsoft.ResourceGraph/"
+               "resources?api-version=2024-04-01")
+        body = {"subscriptions": list(sub_ids),
+                "query": ("ResourceContainers | where type =~ "
+                          "'microsoft.resources/subscriptions' "
+                          "| project subscriptionId"),
+                "options": {"resultFormat": "objectArray", "$top": 1000}}
+        payload = _arm_post(credential, sub_ids[0], url, body)
+        data = payload.get("data", [])
+        if isinstance(data, dict):
+            cols = [c["name"] for c in data.get("columns", [])]
+            recs = [dict(zip(cols, r)) for r in data.get("rows", [])]
+        else:
+            recs = data
+        found = {r.get("subscriptionId") for r in recs if r.get("subscriptionId")}
+        # ResourceContainers de subs puede no listar todas; completar con las que
+        # tengan cualquier recurso.
+        if not found:
+            body["query"] = "Resources | distinct subscriptionId"
+            payload = _arm_post(credential, sub_ids[0], url, body)
+            data = payload.get("data", [])
+            recs = (data if isinstance(data, list)
+                    else [dict(zip([c["name"] for c in data.get("columns", [])], r))
+                          for r in data.get("rows", [])])
+            found = {r.get("subscriptionId") for r in recs if r.get("subscriptionId")}
+        return found or set(sub_ids)
+    except Exception:  # noqa: BLE001
+        return set(sub_ids)
+
+
 # ---------------------------------------------------------------------------
 # Lectura principal de alertas (una suscripcion)
 # ---------------------------------------------------------------------------

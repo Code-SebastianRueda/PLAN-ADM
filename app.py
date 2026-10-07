@@ -34,6 +34,9 @@ import azure_alerts
 import azure_deprecations
 import azure_inventory
 import azure_security
+import azure_backups
+import azure_costs
+import app_auth
 
 try:
     import plotly.express as px
@@ -315,9 +318,105 @@ st.markdown(
 
 
 # ===========================================================================
+# Tema claro / oscuro (toggle en runtime)
+# ===========================================================================
+def _apply_theme() -> None:
+    """Inyecta overrides CSS si el tema activo es oscuro.
+
+    El CSS base usa variables en :root (--surface, --ink, etc.). En modo oscuro
+    solo se reescriben esas variables + los fondos nativos de Streamlit, sin
+    tocar el resto del diseño."""
+    if st.session_state.get("theme", "claro") != "oscuro":
+        return
+    st.markdown(
+        """
+        <style>
+        /* ===== TEMA OSCURO (cobertura amplia) ===== */
+        :root {
+            --ink: #e8ebf2; --muted: #a7b0be; --line: #2b3442;
+            --surface: #161c25; --surface-2: #0f141b;
+            --kblue: #4a9eff; --kblue-dark: #2b7fff;
+        }
+        .stApp, html, body { background: #0f141b !important; color: #e8ebf2 !important; }
+        .block-container { background: #0f141b !important; }
+        section[data-testid="stSidebar"] { background: #161c25 !important; }
+        section[data-testid="stSidebar"] * { color: #e8ebf2 !important; }
+
+        /* Texto general: forzar claro salvo donde se defina color propio vivo */
+        .stApp p, .stApp span, .stApp div, .stApp label, .stApp li,
+        .stApp td, .stApp th, .stMarkdown, [data-testid="stMarkdownContainer"] {
+            color: #e8ebf2;
+        }
+        h1, h2, h3, h4, h5, h6 { color: #e8ebf2 !important; }
+        .stCaption, [data-testid="stCaptionContainer"], small { color: #a7b0be !important; }
+
+        /* Header */
+        .cops-header { background: linear-gradient(100deg,#161c25 0%,#1b2430 100%)
+            !important; border-color: #2b3442 !important; }
+        .cops-header h1, .cops-header .sub { color: #e8ebf2 !important; }
+        .cops-section { color: #e8ebf2 !important; }
+
+        /* Tarjetas / metricas / contenedores con borde */
+        [data-testid="stMetric"] { background: #1b2430 !important;
+            border-color: #2b3442 !important; }
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            background: #161c25 !important; border-color: #2b3442 !important; }
+        [data-testid="stExpander"] { background: #161c25 !important;
+            border-color: #2b3442 !important; }
+        [data-testid="stExpander"] summary { color: #e8ebf2 !important; }
+
+        /* DataFrames / tablas */
+        .stDataFrame, [data-testid="stDataFrame"], [data-testid="stTable"] {
+            background: #161c25 !important; color: #e8ebf2 !important; }
+        .stDataFrame [role="columnheader"], .stDataFrame [role="gridcell"] {
+            color: #e8ebf2 !important; }
+
+        /* Inputs, selects, textareas */
+        [data-baseweb="select"] > div, .stTextInput input, .stNumberInput input,
+        .stTextArea textarea, [data-baseweb="input"] {
+            background: #1b2430 !important; color: #e8ebf2 !important;
+            border-color: #2b3442 !important; }
+        [data-baseweb="popover"], [role="listbox"] { background: #1b2430 !important; }
+        [role="option"] { color: #e8ebf2 !important; }
+
+        /* Radios / tabs */
+        [data-testid="stRadio"] label, [data-baseweb="tab"] { color: #e8ebf2 !important; }
+
+        /* Botones (dejar los primary con su azul) */
+        .stButton > button { background: #1b2430; color: #e8ebf2;
+            border: 1px solid #2b3442; }
+        .stButton > button[kind="primary"] { background: #2b7fff; color: #fff; }
+
+        /* Avisos (st.info/success/warning) un poco mas oscuros */
+        [data-testid="stAlert"] { background: #1b2430 !important; }
+
+        /* Barras de fondo claras -> oscurecer */
+        div[style*="background:#eef1f6"], div[style*="background: #eef1f6"] {
+            background: #243040 !important; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _theme_toggle(key: str) -> None:
+    """Boton visible para alternar tema claro/oscuro."""
+    actual = st.session_state.get("theme", "claro")
+    etiqueta = "🌙 Modo oscuro" if actual == "claro" else "☀️ Modo claro"
+    if st.button(etiqueta, key=key, use_container_width=True, type="secondary"):
+        st.session_state["theme"] = "oscuro" if actual == "claro" else "claro"
+        st.rerun()
+
+
+# ===========================================================================
 # Cabecera
 # ===========================================================================
 def render_header() -> None:
+    # Fila superior: espacio + boton de tema arriba a la derecha (todas las vistas).
+    _, tcol = st.columns([4, 1.3])
+    with tcol:
+        _theme_toggle("theme_header")
+
     logo_html = (
         f"<div class='logo'><img src='data:image/svg+xml;base64,{_logo_b64()}'/></div>"
         if _LOGO_PATH.exists() else "<div class='logo'></div>"
@@ -782,23 +881,24 @@ def render_login() -> None:
         level, msg = flash
         getattr(st, level, st.info)(msg)
 
+    quien = st.session_state.get("app_user_name", "")
     st.markdown("<div style='height:.8rem'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='cops-section'><span class='bar'></span>Conexiones Cloud</div>",
-                unsafe_allow_html=True)
-    st.caption("Conecta una o varias nubes. En este modulo se validan los datos de acceso; "
-               "el descubrimiento de recursos llegara en los siguientes modulos.")
+    cab1, cab2 = st.columns([0.7, 0.3])
+    with cab1:
+        st.markdown("<div class='cops-section'><span class='bar'></span>"
+                    "Conexión a Azure</div>", unsafe_allow_html=True)
+        st.caption(f"Sesión de app: {quien or 'activa'}. Autentícate en Azure "
+                   "(se solicitará el código MFA). Las demás nubes se integrarán "
+                   "más adelante.")
+    with cab2:
+        st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
+        if st.button("Salir de la app", key="btn_app_logout",
+                     use_container_width=True):
+            _app_logout()
+            st.rerun()
 
-    tabs = st.tabs([f"  {p}  " for p in _PROVIDERS])
-    with tabs[0]:
-        _aws_login_form()
-    with tabs[1]:
-        _azure_login_form()
-    with tabs[2]:
-        _gcp_login_form()
-    with tabs[3]:
-        _oci_login_form()
-    with tabs[4]:
-        _ibm_login_form()
+    # Por ahora SOLO Azure (nube en la que estamos trabajando).
+    _azure_login_form()
 
     connected = _connected_clouds()
     if connected:
@@ -921,6 +1021,14 @@ def _logout() -> None:
     # Borrar la sesion persistida para que el F5 no la reviva.
     session_store.clear()
     st.session_state["view"] = "login"
+
+
+def _app_logout() -> None:
+    """Cierra TODO: la sesion de nube y el gate de la app."""
+    _logout()
+    st.session_state["app_authed"] = False
+    st.session_state.pop("app_user_name", None)
+    st.session_state["view"] = "app_login"
 
 
 # ===========================================================================
@@ -1085,6 +1193,77 @@ def _sidebar_aws_scope() -> None:
             st.caption("Esta cuenta no expone roles para tu usuario.")
 
 
+def _sidebar_clouds(connected: list) -> None:
+    """Lista las 5 nubes con su estado (conectada/no) y acceso a conexion.
+
+    Azure (nube activa): boton que abre su flujo MFA (device code). Las demas:
+    boton deshabilitado 'Próximamente' hasta integrarlas."""
+    brand = _CLOUD_BRAND
+    for p in _PROVIDERS:
+        is_conn = p in connected
+        dot = "#1a7a4a" if is_conn else "#c0c6d0"
+        estado = "Conectada" if is_conn else "Sin conectar"
+        st.markdown(
+            f"<div style='display:flex;align-items:center;justify-content:space-between;"
+            f"padding:.25rem 0'>"
+            f"<span style='display:flex;align-items:center;gap:.45rem'>"
+            f"<span style='width:9px;height:9px;border-radius:50%;background:{dot};"
+            f"display:inline-block'></span>"
+            f"<b style='color:{brand.get(p, '#1A1A2E')};font-size:.9rem'>{p}</b></span>"
+            f"<span style='font-size:.72rem;color:#8894a6'>{estado}</span>"
+            f"</div>", unsafe_allow_html=True)
+
+        if p == "Azure":
+            if not is_conn:
+                with st.expander("Conectar Azure (MFA)", expanded=False):
+                    _azure_interactive_connect()
+            # Si ya esta conectada, el alcance (tenant) se muestra mas abajo.
+        else:
+            st.button(f"Conectar {p}", key=f"sb_connect_{p}",
+                      use_container_width=True, disabled=True,
+                      help="Integración próximamente.")
+    st.caption("Por ahora operamos Azure. Las demás nubes se integrarán después.")
+
+
+def _sidebar_clients(connected: list) -> None:
+    """Lista los CLIENTES conectados por nube. Para Azure, el cliente es el
+    tenant con el que se autenticó (su nombre legible). Base para, próximamente,
+    filtrar la nube por cliente."""
+    rows = []
+    # Azure: tenant seleccionado / conectado.
+    if "Azure" in connected:
+        conn = st.session_state.get("azure_connection")
+        tenants = getattr(conn, "tenants", []) if conn else []
+        sel_label = st.session_state.get("scope_Azure_tenant")
+        cliente = None
+        for t in tenants:
+            if t.label == sel_label:
+                cliente = t.name if hasattr(t, "name") else t.label
+                break
+        if cliente is None and tenants:
+            cliente = getattr(tenants[0], "name", tenants[0].label)
+        rows.append(("Azure", cliente or "Tenant Azure"))
+    # AWS: cliente logico seleccionado (futuro).
+    if "AWS" in connected and st.session_state.get("aws_cliente_sel"):
+        rows.append(("AWS", st.session_state.get("aws_cliente_sel")))
+
+    if not rows:
+        st.caption("Aún no hay clientes conectados.")
+        return
+    for nube, cliente in rows:
+        bcolor = _CLOUD_BRAND.get(nube, "#0050A0")
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:.5rem;"
+            f"padding:.3rem .5rem;border-radius:8px;background:var(--surface-2);"
+            f"margin-bottom:4px'>"
+            f"<span style='width:7px;height:7px;border-radius:50%;"
+            f"background:{bcolor};display:inline-block'></span>"
+            f"<span style='font-size:.85rem;font-weight:700'>{cliente}</span>"
+            f"<span style='font-size:.7rem;color:#8894a6;margin-left:auto'>{nube}</span>"
+            f"</div>", unsafe_allow_html=True)
+    st.caption("Próximamente podrás filtrar por cliente.")
+
+
 def render_sidebar() -> None:
     with st.sidebar:
         # 1) Logo principal.
@@ -1101,16 +1280,17 @@ def render_sidebar() -> None:
 
         connected = _connected_clouds()
 
-        # 2) Nubes activas.
-        st.markdown("<div class='sb-title'>Nubes activas</div>", unsafe_allow_html=True)
-        if connected:
-            for p in connected:
-                st.markdown(
-                    f"<div class='sb-cloud'><span class='sb-dot'></span>{p}</div>",
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.caption("Sin nubes conectadas.")
+        # 2) Nubes: todas, conectadas o no, con su estado y boton de conexion.
+        st.markdown("<div class='sb-title'>Nubes</div>", unsafe_allow_html=True)
+        _sidebar_clouds(connected)
+
+        st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+        # 2.5) Clientes conectados (tenant de Azure = cliente). Para proximamente
+        # filtrar la nube por cliente.
+        st.markdown("<div class='sb-title'>Clientes conectados</div>",
+                    unsafe_allow_html=True)
+        _sidebar_clients(connected)
 
         st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
 
@@ -1139,9 +1319,14 @@ def render_sidebar() -> None:
 
         st.divider()
 
-        # 4) Cerrar sesion.
-        if st.button("🚪 Cerrar sesion", use_container_width=True, key="btn_logout"):
+        # 4) Sesion.
+        if st.button("Desconectar Azure", use_container_width=True,
+                     key="btn_logout"):
             _logout()
+            st.rerun()
+        if st.button("🚪 Cerrar sesion (app)", use_container_width=True,
+                     key="btn_app_logout_side"):
+            _app_logout()
             st.rerun()
 
 
@@ -1151,8 +1336,8 @@ def render_sidebar() -> None:
 # Areas del panel central. Cada entrada: (clave, etiqueta, icono, descripcion).
 # Por ahora todas son CASCARA: una pestaña por nube, sin logica de negocio.
 _PANEL_AREAS = [
-    ("health",    "1.1  Health check",  "🩺",
-     "Estado de salud por nube."),
+    ("health",    "1.1  Estado de salud", "🩺",
+     "Estado de salud de las nubes (fuentes oficiales)."),
     ("costos",    "1.2  Costos",        "💲",
      "Costos y optimizacion por nube."),
     ("seguridad", "1.3  Seguridad",     "🛡️",
@@ -1163,6 +1348,8 @@ _PANEL_AREAS = [
      "Alertas y notificaciones por nube."),
     ("deprecados", "1.6  Recursos deprecados", "⏳",
      "Servicios en proceso de retiro segun anuncios de Microsoft."),
+    ("backups",   "1.7  Backups",       "💾",
+     "Protección, cumplimiento y estado de backups por nube."),
 ]
 _PANEL_LABELS = [a[1] for a in _PANEL_AREAS]
 _PANEL_BY_LABEL = {a[1]: a for a in _PANEL_AREAS}
@@ -1258,6 +1445,34 @@ def _azure_selected_tenant_id():
 def _cached_subscriptions(_cred, tenant_id: str) -> list:
     """Suscripciones del tenant (cacheadas 5 min). _cred no se hashea."""
     return azure_auth.list_subscriptions(_cred, tenant_id)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_access(_cred, subs_key: str, sub_ids: list) -> list:
+    """subscriptionIds con acceso de lectura (cacheado 5 min)."""
+    return list(azure_alerts.accessible_subscriptions(_cred, sub_ids))
+
+
+def _subs_with_access_selector(cred, subs, key_prefix):
+    """Construye las opciones del selector marcando las subs SIN acceso.
+
+    Devuelve (opciones, mapa_label->sub, set_sin_acceso). Las sin acceso llevan
+    prefijo 🔒 y, si se eligen, no se consultan."""
+    sub_ids = [s["subscriptionId"] for s in subs]
+    key = "|".join(sorted(sub_ids))
+    accesibles = set(_cached_access(cred, key, sub_ids))
+    opts = [f"Todas las suscripciones con acceso ({len(accesibles)})"]
+    label_to_sub = {}
+    for s in subs:
+        nm = s["displayName"] or s["subscriptionId"]
+        if s["subscriptionId"] in accesibles:
+            opts.append(nm)
+            label_to_sub[nm] = s
+        else:
+            lbl = f"🔒 {nm} (sin acceso)"
+            opts.append(lbl)
+            label_to_sub[lbl] = None  # marcada, no seleccionable efectivamente
+    return opts, label_to_sub, accesibles
 
 
 @st.cache_data(ttl=120, show_spinner=False)
@@ -1792,33 +2007,41 @@ def _render_alert_detail(row) -> None:
 
 
 # ===========================================================================
-# 1.2 Costos (Azure Cost Management + Advisor) — datos reales
+# 1.2 Azure Cost Management — datos reales
 # ===========================================================================
 @st.cache_data(ttl=600, show_spinner=False)
 def _cached_costs(_cred, subs_key: str, subs: list, days: int):
-    """Costos reales (cacheados 10 min): diario, por servicio y ahorro."""
+    """Costos reales (cacheados 10 min)."""
     return azure_costs.load_costs(_cred, subs, days)
 
 
 def _money(v, cur: str = "") -> str:
-    """Formatea un monto de forma compacta: 48600 -> '$48,6K'."""
+    """Formatea un monto compacto: 48600 -> '$48,6K'."""
     try:
         v = float(v or 0)
     except Exception:  # noqa: BLE001
         v = 0.0
-    sym = "$"
     if abs(v) >= 1_000_000:
-        s = f"{sym}{v/1_000_000:.1f}M"
+        s = f"${v/1_000_000:.1f}M"
     elif abs(v) >= 1_000:
-        s = f"{sym}{v/1_000:.1f}K"
+        s = f"${v/1_000:.1f}K"
     else:
-        s = f"{sym}{v:.0f}"
+        s = f"${v:.0f}"
     s = s.replace(".", ",")
     return s + (f" {cur}" if cur else "")
 
 
+def _var_txt(v) -> tuple:
+    """(texto, color) de una variación %."""
+    if v is None:
+        return "—", "#6b7280"
+    arrow = "▲" if v >= 0 else "▼"
+    color = ("#c0392b" if v >= 10 else "#c05621" if v >= 0 else "#1a7a4a")
+    return f"{arrow} {abs(v)}%", color
+
+
 def render_azure_costs() -> None:
-    """1.2 Costos — resumen de gasto, tendencia, servicios y ahorro."""
+    """1.2 Azure Cost Management — control de costos, variación y ahorro."""
     cred = _azure_credential()
     if cred is None:
         st.warning("Sesión de Azure no disponible. Reconecta en el login.")
@@ -1828,10 +2051,9 @@ def render_azure_costs() -> None:
 
     st.markdown(
         "<div style='display:flex;align-items:baseline;gap:.6rem;margin:.2rem 0 .1rem'>"
-        "<span style='font-size:1.25rem;font-weight:800;color:#0050A0'>Resumen de costos</span>"
-        "<span style='font-size:.85rem;color:#8894a6'>Entiende dónde se está "
-        "gastando, qué cambió y dónde puedes ahorrar primero</span></div>",
-        unsafe_allow_html=True)
+        "<span style='font-size:1.25rem;font-weight:800;color:#0050A0'>Azure Cost Management</span>"
+        "<span style='font-size:.85rem;color:#8894a6'>Control de costos · consumo, "
+        "variaciones y recomendaciones de ahorro</span></div>", unsafe_allow_html=True)
 
     subs = _cached_subscriptions(cred, tenant_id or "")
     if not subs:
@@ -1841,13 +2063,14 @@ def render_azure_costs() -> None:
         return
     cred = _azure_credential()
 
-    # Filtros.
+    # Filtros. Las subs sin acceso se marcan con 🔒 y no se consultan.
     f1, f2, f3 = st.columns([2.4, 1.1, 0.8])
-    sub_names = [s["displayName"] or s["subscriptionId"] for s in subs]
-    sub_opts = [f"Todas las suscripciones ({len(subs)})"] + sub_names
+    with st.spinner("Verificando accesos…"):
+        sub_opts, label_to_sub, accesibles = _subs_with_access_selector(
+            cred, subs, "cost")
     sub_choice = f1.selectbox("Suscripción", sub_opts, key="cost_sub")
-    period = f2.selectbox("Periodo", ["Últimos 30 días", "Últimos 7 días",
-                                      "Últimos 90 días"], key="cost_period")
+    period = f2.selectbox("Periodo", ["Últimos 7 días", "Últimos 30 días",
+                                      "Últimos 90 días"], index=1, key="cost_period")
     with f3:
         st.markdown("<div style='height:1.7rem'></div>", unsafe_allow_html=True)
         do_refresh = st.button("Actualizar", key="cost_refresh",
@@ -1855,9 +2078,18 @@ def render_azure_costs() -> None:
 
     days_map = {"Últimos 7 días": 7, "Últimos 30 días": 30, "Últimos 90 días": 90}
     days = days_map[period]
-    single = None if sub_choice.startswith("Todas las suscripciones") else sub_choice
-    chosen = [s for s in subs
-              if single is None or (s["displayName"] or s["subscriptionId"]) == single]
+    if sub_choice.startswith("Todas las suscripciones"):
+        chosen = [s for s in subs if s["subscriptionId"] in accesibles]
+    else:
+        sel = label_to_sub.get(sub_choice)
+        if sel is None:
+            st.warning("No tienes acceso a esa suscripción. Elige otra o "
+                       "'Todas las suscripciones con acceso'.")
+            return
+        chosen = [sel]
+    if not chosen:
+        st.warning("No hay suscripciones con acceso en este tenant.")
+        return
     subs_key = "|".join(sorted(s["subscriptionId"] for s in chosen)) + f"@{days}"
 
     if do_refresh:
@@ -1866,12 +2098,12 @@ def render_azure_costs() -> None:
     with st.spinner("Consultando Azure Cost Management…"):
         data = _cached_costs(cred, subs_key, chosen, days)
 
+    cur = data.get("currency", "")
     fetched = data.get("fetched_at", "")
     cost_status = data.get("cost_status", "error")
     adv_status = data.get("advisor_status", "error")
     errors = data.get("errors") or []
     scanned = data.get("subscriptions_scanned", len(chosen))
-    cur = data.get("currency", "")
 
     s1, s2 = st.columns(2)
     s1.markdown(
@@ -1891,64 +2123,105 @@ def render_azure_costs() -> None:
                 st.text(f"- {e}")
 
     k = azure_costs.kpis(data)
+    if (data.get("daily") is None or data.get("daily").empty):
+        st.info("No hay datos de costo en el alcance seleccionado (verifica "
+                "permisos de Cost Management en las suscripciones).")
+        return
 
-    # ── KPIs ─────────────────────────────────────────────────────────────────
-    c1, c2, c3, c4, c5 = st.columns(5)
-    _kpi_card(c1, "Costo acumulado", _money(k["acumulado"], cur),
+    # ── Resumen de costos: 6 KPIs ────────────────────────────────────────────
+    st.markdown("**Resumen de costos** · entiende dónde se gasta, qué cambió y "
+                "dónde puedes ahorrar primero")
+    r1 = st.columns(3)
+    _kpi_card(r1[0], "Costo acumulado", _money(k["acumulado"], cur),
               f"últimos {days} días", "#0050A0")
-    _kpi_card(c2, "Proyección mensual", _money(k["proyeccion"], cur),
-              "estimada (prom. diario × 30)", "#2b6cb0")
+    pres_pct = k.get("presupuesto_pct")
+    proy_sub = (f"vs. presupuesto" if pres_pct is None
+                else _var_txt(pres_pct - 100)[0] + " vs. presupuesto")
+    _kpi_card(r1[1], "Proyección mensual", _money(k["proyeccion"], cur),
+              proy_sub, "#2b6cb0")
     var = k["variacion_pct"]
-    var_txt = (f"{'▲' if var >= 0 else '▼'} {abs(var)}%" if var is not None else "N/D")
-    _kpi_card(c3, "Variación", var_txt, "mitad reciente vs. anterior",
-              "#c05621" if (var or 0) > 0 else "#1a7a4a",
+    vtxt, vcolor = _var_txt(var)
+    _kpi_card(r1[2], "Variación", vtxt, "vs. periodo anterior", vcolor,
               strong=(var or 0) > 10)
-    _kpi_card(c4, "Ahorro potencial", _money(k["ahorro"], cur),
-              "recomendaciones de Advisor", "#1a7a4a")
-    _kpi_card(c5, "Recursos con optimización", k["optimizaciones"],
+    r2 = st.columns(3)
+    _kpi_card(r2[0], "Ahorro potencial", _money(k["ahorro"], cur),
+              "recomendaciones activas", "#1a7a4a", strong=k["ahorro"] > 0)
+    _kpi_card(r2[1], "Recursos con optimización", k["optimizaciones"],
               "con ahorro sugerido", "#5b21b6")
+    if pres_pct is not None:
+        pcolor = ("#c0392b" if pres_pct >= 95 else "#c05621" if pres_pct >= 85
+                  else "#1a7a4a")
+        _kpi_card(r2[2], "Presupuesto utilizado", f"{pres_pct}%",
+                  f"{_money(k.get('disponible'), cur)} disponibles", pcolor,
+                  strong=pres_pct >= 95)
+    else:
+        _kpi_card(r2[2], "Presupuesto", "N/D", "sin budgets configurados", "#6b7280")
 
-    st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+    # ── Resumen ejecutivo dinamico ───────────────────────────────────────────
+    st.info(azure_costs.executive_summary(data))
 
-    # ── Tendencia + Costo por servicio + Dónde ahorrar ───────────────────────
-    col_t, col_s, col_a = st.columns(3)
-    with col_t:
-        st.markdown("**Tendencia de consumo** · costo diario")
-        tr = azure_costs.daily_trend(data.get("daily"), last_days=min(days, 10))
-        if tr.empty:
-            st.caption("Sin datos de costo diario.")
-        else:
-            maxv = float(tr["amount"].max()) or 1
-            for _, r in tr.iterrows():
-                pct = r["amount"] / maxv * 100
-                st.markdown(
-                    f"""
-                    <div style='display:flex;align-items:center;gap:.5rem;
-                                margin-bottom:.3rem;font-size:.8rem'>
-                      <span style='width:76px;color:#6b7280'>{r['date'][5:]}</span>
-                      <div style='flex:1;background:#eef1f6;border-radius:5px;height:10px'>
-                        <div style='width:{pct}%;background:#2b7fff;height:10px;
-                                    border-radius:5px'></div>
-                      </div>
-                      <span style='width:72px;text-align:right;font-weight:700'>
-                        {_money(r['amount'], cur)}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+    # ── Presupuesto ──────────────────────────────────────────────────────────
+    bud = azure_costs.budget_detail(data)
+    if bud["has_budget"]:
+        est_color = {"Normal": "#1a7a4a", "Atención": "#c05621",
+                     "Riesgo": "#c0392b"}[bud["estado"]]
+        st.markdown("**Presupuesto**")
+        bc1, bc2, bc3, bc4 = st.columns(4)
+        bc1.markdown(
+            f"<div style='font-size:.74rem;color:#6b7280'>Configurado</div>"
+            f"<div style='font-size:1.3rem;font-weight:800'>{_money(bud['configurado'], cur)}</div>",
+            unsafe_allow_html=True)
+        bc2.markdown(
+            f"<div style='font-size:.74rem;color:#6b7280'>Consumido ({bud['pct']}%)</div>"
+            f"<div style='font-size:1.3rem;font-weight:800'>{_money(bud['consumido'], cur)}</div>"
+            f"{_bk_bar(bud['pct'] or 0)}", unsafe_allow_html=True)
+        bc3.markdown(
+            f"<div style='font-size:.74rem;color:#6b7280'>Disponible</div>"
+            f"<div style='font-size:1.3rem;font-weight:800'>{_money(bud['disponible'], cur)}</div>"
+            f"<div style='font-size:.72rem;color:#8894a6'>{bud['dias_restantes']} días restantes</div>",
+            unsafe_allow_html=True)
+        bc4.markdown(
+            f"<div style='font-size:.74rem;color:#6b7280'>Estado</div>"
+            f"<div style='font-size:1.1rem;font-weight:800;color:{est_color}'>{bud['estado']}</div>"
+            f"<div style='font-size:.72rem;color:#8894a6'>proyección "
+            f"{_money(bud['proyeccion'], cur)}</div>", unsafe_allow_html=True)
+        if bud["excede"]:
+            st.warning("⚠ La proyección mensual supera el presupuesto establecido.")
+
+    # ── Tendencia de consumo ─────────────────────────────────────────────────
+    st.markdown("**Tendencia de consumo**")
+    tr = azure_costs.daily_trend(data, last_days=days)
+    if tr.empty:
+        st.caption("Sin datos de tendencia.")
+    elif _PLOTLY:
+        fig = px.area(tr, x="date", y="amount",
+                      color_discrete_sequence=["#2b7fff"])
+        fig.update_layout(height=240, margin=dict(l=0, r=0, t=10, b=0),
+                          paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                          xaxis_title="", yaxis_title="")
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.line_chart(tr.set_index("date"))
+
+    # ── Costo por servicio + por suscripción ─────────────────────────────────
+    col_s, col_u = st.columns(2)
     with col_s:
         st.markdown("**Costo por servicio** · principales contribuyentes")
-        sv = azure_costs.services_top(data.get("services"), top=6)
+        sv = azure_costs.services_ranking(data, top=6)
         if sv.empty:
-            st.caption("Sin datos por servicio.")
+            st.caption("Sin datos.")
         else:
             maxv = float(sv["amount"].max()) or 1
             for _, r in sv.iterrows():
                 pct = r["amount"] / maxv * 100
+                vt, vc = _var_txt(r["variacion"])
                 st.markdown(
                     f"""
                     <div style='margin-bottom:.3rem;font-size:.8rem'>
                       <div style='display:flex;justify-content:space-between'>
                         <span style='font-weight:600'>{r['service']}</span>
-                        <span style='font-weight:700'>{_money(r['amount'], cur)}</span>
+                        <span style='font-weight:700'>{_money(r['amount'], cur)}
+                          <span style='color:{vc};font-weight:600;font-size:.72rem'>{vt}</span></span>
                       </div>
                       <div style='background:#eef1f6;border-radius:5px;height:9px'>
                         <div style='width:{pct}%;background:#2b7fff;height:9px;
@@ -1956,72 +2229,549 @@ def render_azure_costs() -> None:
                       </div>
                     </div>
                     """, unsafe_allow_html=True)
-    with col_a:
-        st.markdown("**Dónde ahorrar primero** · impacto estimado")
-        sav = azure_costs.savings_opportunities(data.get("advisor"), top=5)
-        if sav.empty:
-            st.caption("Sin recomendaciones de ahorro de Advisor.")
+    with col_u:
+        st.markdown("**Costo por suscripción**")
+        su = azure_costs.subs_ranking(data)
+        if su.empty:
+            st.caption("Sin datos.")
         else:
-            imp_color = {"Alto": "#1a7a4a", "Medio": "#c05621", "Bajo": "#6b7280"}
-            for _, r in sav.iterrows():
-                ic = imp_color.get(r["impact"], "#6b7280")
+            maxv = float(su["amount"].max()) or 1
+            for _, r in su.iterrows():
+                pct = r["amount"] / maxv * 100
+                vt, vc = _var_txt(r["variacion"])
                 st.markdown(
                     f"""
-                    <div style='border:1px solid #eef1f6;border-radius:10px;
-                                padding:.45rem .6rem;margin-bottom:.35rem;
-                                display:flex;justify-content:space-between;
-                                align-items:center'>
-                      <div>
-                        <div style='font-weight:700;font-size:.84rem'>{_safe_str(r['name'])[:42]}</div>
-                        <div style='font-size:.72rem;color:#8894a6'>
-                          {int(r['recursos'])} recursos · {_money(r['savings'], cur)}</div>
+                    <div style='margin-bottom:.3rem;font-size:.8rem'>
+                      <div style='display:flex;justify-content:space-between'>
+                        <span style='font-weight:600'>{_safe_str(r['subscriptionName'])}</span>
+                        <span style='font-weight:700'>{_money(r['amount'], cur)}
+                          <span style='color:{vc};font-weight:600;font-size:.72rem'>{vt}</span></span>
                       </div>
-                      <span style='color:{ic};font-weight:800;font-size:.8rem'>{r['impact']}</span>
+                      <div style='background:#eef1f6;border-radius:5px;height:9px'>
+                        <div style='width:{pct}%;background:#5b21b6;height:9px;
+                                    border-radius:5px'></div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+    st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    # ── Dónde ahorrar primero ────────────────────────────────────────────────
+    st.markdown("**Dónde ahorrar primero** · oportunidades priorizadas por impacto")
+    sav = azure_costs.savings_opportunities(data, top=6)
+    if sav.empty:
+        st.caption("Sin recomendaciones de ahorro de Advisor.")
+    else:
+        imp_color = {"Alto": "#1a7a4a", "Medio": "#c05621", "Bajo": "#6b7280"}
+        cols = st.columns(2)
+        for i, (_, r) in enumerate(sav.iterrows()):
+            ic = imp_color.get(r["impact"], "#6b7280")
+            with cols[i % 2]:
+                with st.container(border=True):
+                    st.markdown(
+                        f"<div style='font-weight:700'>{_safe_str(r['name'])[:60]}</div>"
+                        f"<div style='font-size:.76rem;color:#8894a6'>"
+                        f"{r['category']} · {int(r['recursos'])} recursos · "
+                        f"esfuerzo {r['effort']}</div>"
+                        f"<div style='font-size:1.05rem;font-weight:800;color:#1a7a4a;"
+                        f"margin-top:2px'>{_money(r['savings'], cur)}/periodo "
+                        f"<span style='font-size:.72rem;color:{ic}'>· {r['impact']}</span></div>",
+                        unsafe_allow_html=True)
+
+    st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    # ── Anomalías + Quick wins ───────────────────────────────────────────────
+    col_an, col_qw = st.columns(2)
+    with col_an:
+        st.markdown("**Incrementos detectados** · recursos con mayor variación")
+        an = azure_costs.anomalies(data, threshold=20.0, top=6)
+        if an.empty:
+            st.caption("Sin incrementos relevantes (> 20%).")
+        else:
+            for _, r in an.iterrows():
+                vt, vc = _var_txt(r["variacion"])
+                st.markdown(
+                    f"<div style='border-bottom:1px solid #eef1f6;padding:.3rem 0;"
+                    f"font-size:.82rem'>"
+                    f"<b>{_safe_str(r['resource'])}</b> "
+                    f"<span style='color:#8894a6'>· {_safe_str(r.get('resourceType'))}</span><br>"
+                    f"{_money(r['amount'], cur)} "
+                    f"<span style='color:{vc};font-weight:700'>{vt}</span></div>",
+                    unsafe_allow_html=True)
+    with col_qw:
+        st.markdown("**Quick Wins** · alto ahorro, bajo esfuerzo")
+        qw = azure_costs.quick_wins(data, top=5)
+        if qw.empty:
+            st.caption("Sin quick wins identificados.")
+        else:
+            for _, r in qw.iterrows():
+                st.markdown(
+                    f"<div style='border-bottom:1px solid #eef1f6;padding:.3rem 0;"
+                    f"font-size:.82rem'>"
+                    f"<b>{_safe_str(r['name'])[:50]}</b><br>"
+                    f"<span style='color:#1a7a4a;font-weight:700'>{_money(r['savings'], cur)}</span> "
+                    f"<span style='color:#8894a6'>· {int(r['recursos'])} recursos · "
+                    f"esfuerzo {r['effort']}</span></div>",
+                    unsafe_allow_html=True)
+
+    st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    # ── Recursos nuevos con impacto en costos ────────────────────────────────
+    nuevos = azure_costs.new_resources_impact(data, top=8)
+    if not nuevos.empty:
+        st.markdown("**Nuevos recursos con impacto en costos** · sin gasto en el "
+                    "periodo anterior")
+        dn = nuevos.copy()
+        dn["Costo periodo"] = dn["amount"].map(lambda v: _money(v, cur))
+        st.dataframe(
+            dn[["resource", "resourceType", "subscriptionName", "Costo periodo"]]
+            .rename(columns={"resource": "Recurso", "resourceType": "Tipo",
+                             "subscriptionName": "Suscripción"}),
+            use_container_width=True, hide_index=True)
+        st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    # ── Costo por tipo de recurso ────────────────────────────────────────────
+    st.markdown("**Costo por tipo de recurso** · qué tipo de recurso concentra "
+                "el gasto y cómo cambió")
+    rtype = azure_costs.resource_type_ranking(data, top=10)
+    if rtype.empty:
+        st.caption("Sin datos de costo por tipo de recurso.")
+    else:
+        col_g, col_t = st.columns([1.3, 1])
+        with col_g:
+            if _PLOTLY:
+                plot_df = rtype.sort_values("amount")
+                fig = px.bar(plot_df, x="amount", y="resourceType",
+                             orientation="h", text="amount",
+                             color_discrete_sequence=["#2b7fff"])
+                fig.update_traces(
+                    texttemplate="%{text:,.0f}", textposition="outside",
+                    hovertemplate="%{y}<br>Costo: %{x:,.0f} " + (cur or "") +
+                    "<extra></extra>")
+                fig.update_layout(
+                    height=max(260, 36 * len(plot_df)),
+                    margin=dict(l=0, r=20, t=10, b=0),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    xaxis_title="", yaxis_title="")
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.bar_chart(rtype.set_index("resourceType")["amount"])
+        with col_t:
+            # Detalle con % y variacion por tipo.
+            for _, r in rtype.iterrows():
+                vt, vc = _var_txt(r["variacion"])
+                st.markdown(
+                    f"<div style='border-bottom:1px solid #eef1f6;padding:.28rem 0;"
+                    f"font-size:.82rem'>"
+                    f"<div style='display:flex;justify-content:space-between'>"
+                    f"<b>{r['resourceType']}</b>"
+                    f"<span style='font-weight:700'>{_money(r['amount'], cur)}</span></div>"
+                    f"<div style='font-size:.72rem;color:#8894a6'>"
+                    f"{r['pct']}% del total · <span style='color:{vc}'>{vt}</span> "
+                    f"vs. periodo anterior</div></div>",
+                    unsafe_allow_html=True)
+
+    # ── Resource Groups + export ─────────────────────────────────────────────
+    import io as _io
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    with st.expander("Costo por Resource Group"):
+        rg = azure_costs.rg_ranking(data, top=20)
+        if rg.empty:
+            st.caption("Sin datos.")
+        else:
+            d = rg.copy()
+            d["Costo"] = d["amount"].map(lambda v: _money(v, cur))
+            d["Anterior"] = d["prev"].map(lambda v: _money(v, cur))
+            d["Variación"] = d["variacion"].map(
+                lambda v: _var_txt(v)[0] if v is not None else "—")
+            st.dataframe(d[["resourceGroup", "subscriptionName", "Costo",
+                            "Anterior", "Variación", "pct"]].rename(columns={
+                "resourceGroup": "Resource Group",
+                "subscriptionName": "Suscripción", "pct": "% total"}),
+                use_container_width=True, hide_index=True)
+
+    # Export de recomendaciones + costo por tipo.
+    e1, e2 = st.columns(2)
+    sav_all = azure_costs.savings_opportunities(data, top=500)
+    if not sav_all.empty:
+        buf = _io.StringIO(); sav_all.to_csv(buf, index=False)
+        e1.download_button("Exportar recomendaciones (CSV)",
+                           buf.getvalue().encode("utf-8-sig"),
+                           f"costos_ahorro_{ts}.csv", "text/csv", key="cost_csv_rec")
+    if not rtype.empty:
+        buf2 = _io.StringIO(); rtype.to_csv(buf2, index=False)
+        e2.download_button("Exportar costo por tipo (CSV)",
+                           buf2.getvalue().encode("utf-8-sig"),
+                           f"costos_por_tipo_{ts}.csv", "text/csv", key="cost_csv_rtype")
+
+    st.caption("Fuente: Azure Cost Management (gasto real), Consumption (budgets) "
+               "y Advisor (ahorro). La proyección es promedio diario × 30.")
+
+
+# ===========================================================================
+# 1.7 Azure Backup Center (Recovery Services) — datos reales
+# ===========================================================================
+_BK_PROT_COLOR = {
+    "Protegido": "#1a7a4a", "Fallido": "#c0392b", "Sin protección": "#c0392b",
+    "Advertencia": "#c05621", "Pendiente": "#2b6cb0",
+}
+_BK_STATUS_COLOR = {
+    "Exitosos": "#1a7a4a", "Fallidos": "#c0392b", "Advertencias": "#c05621",
+    "Cancelados": "#6b7280", "En ejecución": "#2b6cb0",
+}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _cached_backups(_cred, subs_key: str, subs: list, days: int):
+    """Estado de backups real (cacheado 5 min)."""
+    return azure_backups.load_backups(_cred, subs, days)
+
+
+def _bk_bar(pct: float) -> str:
+    color = "#1a7a4a" if pct >= 95 else ("#c05621" if pct >= 90 else "#c0392b")
+    return (f"<div style='background:#eef1f6;border-radius:6px;height:12px;"
+            f"margin-top:4px'><div style='width:{pct}%;background:{color};"
+            f"height:12px;border-radius:6px'></div></div>")
+
+
+def render_azure_backups() -> None:
+    """1.7 Azure Backup Center — protección y estado de backups."""
+    cred = _azure_credential()
+    if cred is None:
+        st.warning("Sesión de Azure no disponible. Reconecta en el login.")
+        return
+
+    tenant_id = _azure_selected_tenant_id()
+
+    st.markdown(
+        "<div style='display:flex;align-items:baseline;gap:.6rem;margin:.2rem 0 .1rem'>"
+        "<span style='font-size:1.25rem;font-weight:800;color:#0050A0'>Azure Backup Center</span>"
+        "<span style='font-size:.85rem;color:#8894a6'>Protección, cumplimiento "
+        "y estado de backups de los recursos Azure</span></div>",
+        unsafe_allow_html=True)
+
+    subs = _cached_subscriptions(cred, tenant_id or "")
+    if not subs:
+        st.info("No se encontraron suscripciones accesibles en el tenant "
+                "seleccionado. Puede requerir un inicio de sesión adicional (MFA).")
+        _azure_tenant_login_flow(tenant_id)
+        return
+    cred = _azure_credential()
+
+    # Filtros.
+    f1, f2, f3 = st.columns([2.4, 1.1, 0.8])
+    sub_names = [s["displayName"] or s["subscriptionId"] for s in subs]
+    sub_opts = [f"Todas las suscripciones ({len(subs)})"] + sub_names
+    sub_choice = f1.selectbox("Suscripción", sub_opts, key="bk_sub")
+    period = f2.selectbox("Periodo", ["Últimos 7 días", "Últimos 30 días",
+                                      "Últimos 90 días"], index=1, key="bk_period")
+    with f3:
+        st.markdown("<div style='height:1.7rem'></div>", unsafe_allow_html=True)
+        do_refresh = st.button("Actualizar", key="bk_refresh",
+                               use_container_width=True)
+
+    days_map = {"Últimos 7 días": 7, "Últimos 30 días": 30, "Últimos 90 días": 90}
+    days = days_map[period]
+    single = None if sub_choice.startswith("Todas las suscripciones") else sub_choice
+    chosen = [s for s in subs
+              if single is None or (s["displayName"] or s["subscriptionId"]) == single]
+    subs_key = "|".join(sorted(s["subscriptionId"] for s in chosen)) + f"@{days}"
+
+    if do_refresh:
+        _cached_backups.clear()
+
+    with st.spinner("Consultando Recovery Services (vaults, items y jobs)…"):
+        data = _cached_backups(cred, subs_key, chosen, days)
+
+    fetched = data.get("fetched_at", "")
+    errors = data.get("errors") or []
+    scanned = data.get("subscriptions_scanned", len(chosen))
+    n_vaults = data.get("vaults", 0)
+    st.caption(f"Suscripciones consultadas: {scanned} · Vaults: {n_vaults} · "
+               f"Última sincronización: {fetched}")
+    if errors:
+        with st.expander(f"Avisos de sincronización ({len(errors)})"):
+            for e in errors:
+                st.text(f"- {e}")
+
+    items = data.get("items", pd.DataFrame())
+    jobs = data.get("jobs", pd.DataFrame())
+
+    if (items is None or items.empty) and (jobs is None or jobs.empty):
+        st.info("No se encontraron recursos protegidos ni vaults en el alcance. "
+                "Si usas Backup Vault (Data Protection) o no hay Recovery Services "
+                "vaults, no habrá datos aquí.")
+        return
+
+    k = azure_backups.kpis(data)
+
+    # ── 6 KPIs ───────────────────────────────────────────────────────────────
+    r1 = st.columns(3)
+    _kpi_card(r1[0], "Recursos protegidos", k["protegidos"],
+              f"{k['proteccion_pct']}% del inventario", "#1a7a4a")
+    _kpi_card(r1[1], "Backups exitosos", k["exitosos"],
+              f"{k['exito_pct']}% de ejecuciones", "#0050A0")
+    _kpi_card(r1[2], "Backups fallidos", k["fallidos"],
+              "en el periodo", "#c0392b", strong=k["fallidos"] > 0)
+    r2 = st.columns(3)
+    _kpi_card(r2[0], "Recursos sin protección", k["sin_proteccion"],
+              f"{k['sin_proteccion_pct']}% del inventario", "#c0392b",
+              strong=k["sin_proteccion"] > 0)
+    _kpi_card(r2[1], "RPO incumplido", k["rpo_incumplido"],
+              "recursos fuera de SLA", "#c05621", strong=k["rpo_incumplido"] > 0)
+    ub = k["ultimo_backup_min"]
+    ub_txt = (f"{ub} min" if ub is not None and ub < 120
+              else (f"{ub//60} h" if ub is not None else "N/D"))
+    _kpi_card(r2[2], "Último backup exitoso", ub_txt,
+              "desde el último backup", "#2b6cb0")
+
+    st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Estado general de protección (3 barras) ──────────────────────────────
+    st.markdown("**Estado general de protección**")
+    g1, g2, g3 = st.columns(3)
+    prot = k["proteccion_pct"]
+    rpo = azure_backups.calculate_rpo_compliance(items)
+    exito = k["exito_pct"]
+    for col, label, val in [(g1, "Protección", prot),
+                            (g2, "Cumplimiento RPO", rpo),
+                            (g3, "Éxito de backups", exito)]:
+        col.markdown(
+            f"<div style='font-size:.8rem;color:#6b7280;font-weight:700'>{label}</div>"
+            f"<div style='font-size:1.6rem;font-weight:800;color:#1A1A2E'>{val}%</div>"
+            f"{_bk_bar(val)}", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
+
+    # ── Donut estados + Tendencia ────────────────────────────────────────────
+    col_d, col_t = st.columns([1, 1.4])
+    with col_d:
+        st.markdown("**Estado de ejecuciones**")
+        bs = azure_backups.jobs_by_status(jobs)
+        if bs.empty:
+            st.caption("Sin ejecuciones de backup en el periodo.")
+        elif _PLOTLY:
+            fig = px.pie(bs, names="status", values="count", hole=0.55,
+                         color="status", color_discrete_map=_BK_STATUS_COLOR)
+            fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0),
+                              showlegend=True, paper_bgcolor="white")
+            fig.update_traces(textposition="inside", textinfo="value")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.dataframe(bs, use_container_width=True, hide_index=True)
+    with col_t:
+        st.markdown("**Tendencia de backups** · exitosos vs. fallidos")
+        tr = azure_backups.jobs_trend(jobs)
+        if tr.empty:
+            st.caption("Sin datos de tendencia.")
+        elif _PLOTLY:
+            fig = px.line(tr, x="date", y=["Exitosos", "Fallidos"],
+                          color_discrete_map={"Exitosos": "#1a7a4a",
+                                              "Fallidos": "#c0392b"})
+            fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0),
+                              paper_bgcolor="white", plot_bgcolor="white",
+                              legend_title="", xaxis_title="", yaxis_title="")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.dataframe(tr, use_container_width=True, hide_index=True)
+
+    st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    # ── Protección por tipo + Cumplimiento RPO ───────────────────────────────
+    col_pt, col_rpo = st.columns(2)
+    with col_pt:
+        st.markdown("**Protección por tipo de recurso**")
+        pt = azure_backups.protection_by_type(items)
+        if pt.empty:
+            st.caption("Sin datos.")
+        else:
+            maxv = int(pt["total"].max()) or 1
+            for _, r in pt.iterrows():
+                pp = r["protegidos"] / maxv * 100
+                up = r["sinProteccion"] / maxv * 100
+                st.markdown(
+                    f"""
+                    <div style='margin-bottom:.4rem;font-size:.8rem'>
+                      <div style='display:flex;justify-content:space-between'>
+                        <span style='font-weight:600'>{r['resourceType']}</span>
+                        <span style='color:#6b7280'>{int(r['protegidos'])} prot · 
+                          {int(r['sinProteccion'])} sin</span>
+                      </div>
+                      <div style='display:flex;gap:2px;height:10px'>
+                        <div style='width:{pp}%;background:#1a7a4a;border-radius:4px'></div>
+                        <div style='width:{up}%;background:#c0392b;border-radius:4px'></div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+    with col_rpo:
+        st.markdown("**Cumplimiento de RPO**")
+        rb = azure_backups.rpo_compliance_breakdown(items)
+        if rb.empty:
+            st.caption("Sin datos.")
+        else:
+            rc = {"Dentro del RPO": "#1a7a4a", "Fuera del RPO": "#c0392b",
+                  "Sin política": "#6b7280"}
+            maxv = int(rb["count"].max()) or 1
+            for _, r in rb.iterrows():
+                pct = r["count"] / maxv * 100
+                col = rc.get(r["categoria"], "#2b6cb0")
+                st.markdown(
+                    f"""
+                    <div style='margin-bottom:.4rem;font-size:.8rem'>
+                      <div style='display:flex;justify-content:space-between'>
+                        <span style='font-weight:600'>{r['categoria']}</span>
+                        <span style='font-weight:700'>{int(r['count'])}</span>
+                      </div>
+                      <div style='background:#eef1f6;border-radius:5px;height:10px'>
+                        <div style='width:{pct}%;background:{col};height:10px;
+                                    border-radius:5px'></div>
+                      </div>
                     </div>
                     """, unsafe_allow_html=True)
 
     st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
 
-    # ── Tablas + export ──────────────────────────────────────────────────────
+    # ── Atención requerida (filtra la tabla) ─────────────────────────────────
+    att = azure_backups.attention_items(data)
+    st.markdown("**Atención requerida**")
+    a1, a2, a3, a4 = st.columns(4)
+    _kpi_card(a1, "🔴 Backups fallidos", att["fallidos"], "recursos", "#c0392b",
+              strong=att["fallidos"] > 0)
+    _kpi_card(a2, "🔴 Sin backup", att["sin_backup"], "recursos", "#c0392b",
+              strong=att["sin_backup"] > 0)
+    _kpi_card(a3, "🟠 RPO incumplido", att["rpo"], "recursos", "#c05621",
+              strong=att["rpo"] > 0)
+    _kpi_card(a4, "🟡 Backups antiguos", att["antiguos"], "recursos", "#b7791f")
+
+    st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Tabla principal: estado de protección de recursos ────────────────────
+    st.markdown("**Estado de protección de recursos**")
+    tf1, tf2, tf3 = st.columns([1, 1, 2])
+    estados = ["Todos", "Protegido", "Fallido", "Sin protección",
+               "Advertencia", "Pendiente"]
+    estado_f = tf1.selectbox("Estado", estados, key="bk_estado")
+    tipos = ["Todos"] + sorted(items["resourceType"].dropna().unique().tolist())
+    tipo_f = tf2.selectbox("Tipo", tipos, key="bk_tipo")
+    search = tf3.text_input("Buscar recurso, policy, RG…", key="bk_search")
+
+    tbl = items.copy()
+    if estado_f != "Todos":
+        tbl = tbl[tbl["protection"] == estado_f]
+    if tipo_f != "Todos":
+        tbl = tbl[tbl["resourceType"] == tipo_f]
+    if search:
+        q = search.lower()
+        mask = (tbl["resource"].astype(str).str.lower().str.contains(q, na=False)
+                | tbl["policyName"].astype(str).str.lower().str.contains(q, na=False)
+                | tbl["resourceGroup"].astype(str).str.lower().str.contains(q, na=False)
+                | tbl["subscriptionName"].astype(str).str.lower().str.contains(q, na=False))
+        tbl = tbl[mask]
+
+    view_cols = {
+        "resource": "Recurso", "resourceType": "Tipo",
+        "subscriptionName": "Suscripción", "resourceGroup": "Resource Group",
+        "policyName": "Backup Policy", "lastBackup": "Último backup",
+        "protection": "Estado", "lastRecoveryPoint": "Último RP",
+    }
+    show = tbl[list(view_cols.keys())].rename(columns=view_cols)
+    st.dataframe(show, use_container_width=True, hide_index=True, height=360)
+    st.caption(f"Mostrando {len(tbl)} de {len(items)} recursos")
+
     import io as _io
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    tab_s, tab_a = st.tabs(["Costo por servicio", "Oportunidades de ahorro"])
-    with tab_s:
-        sv_all = (data.get("services") if data.get("services") is not None
-                  else pd.DataFrame())
-        if sv_all.empty:
-            st.caption("Sin datos.")
-        else:
-            agg = (sv_all.groupby("service", as_index=False)["amount"].sum()
-                         .sort_values("amount", ascending=False))
-            agg["amount"] = agg["amount"].round(2)
-            st.dataframe(agg.rename(columns={"service": "Servicio",
-                                             "amount": f"Costo ({cur or '—'})"}),
-                         use_container_width=True, hide_index=True)
-            buf = _io.StringIO(); agg.to_csv(buf, index=False)
-            st.download_button("Descargar costo por servicio (CSV)",
-                               buf.getvalue().encode("utf-8-sig"),
-                               f"costos_servicio_{ts}.csv", "text/csv",
-                               key="cost_csv_svc")
-    with tab_a:
-        adv_all = azure_costs.savings_opportunities(data.get("advisor"), top=500)
-        if adv_all.empty:
-            st.caption("Sin recomendaciones de ahorro.")
-        else:
-            v = adv_all.rename(columns={
-                "name": "Recomendación", "impact": "Impacto",
-                "recursos": "Recursos", "savings": f"Ahorro ({cur or '—'})"})[
-                ["Recomendación", "Impacto", "Recursos", f"Ahorro ({cur or '—'})"]]
-            st.dataframe(v, use_container_width=True, hide_index=True)
-            buf = _io.StringIO(); adv_all.to_csv(buf, index=False)
-            st.download_button("Descargar oportunidades de ahorro (CSV)",
-                               buf.getvalue().encode("utf-8-sig"),
-                               f"costos_ahorro_{ts}.csv", "text/csv",
-                               key="cost_csv_sav")
+    buf = _io.StringIO(); tbl.to_csv(buf, index=False)
+    st.download_button("Exportar CSV", buf.getvalue().encode("utf-8-sig"),
+                       f"azure_backups_{ts}.csv", "text/csv", key="bk_csv")
 
-    st.caption("Fuente: Azure Cost Management (gasto real) y Azure Advisor "
-               "(ahorro estimado). Proyección y variación se calculan sobre el "
-               "gasto real del periodo; no se usan presupuestos externos.")
+    # ── Detalle de recurso ───────────────────────────────────────────────────
+    if not tbl.empty:
+        st.markdown("**Detalle del recurso**")
+        labels = [f"[{r['protection']}] {r['resource']} · {r['resourceType']}"
+                  for _, r in tbl.iterrows()]
+        idx = st.selectbox("Selecciona un recurso", range(len(labels)),
+                           format_func=lambda i: labels[i], key="bk_detail_sel")
+        _render_backup_detail(tbl.iloc[idx], jobs)
+
+    st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Recomendaciones ──────────────────────────────────────────────────────
+    st.markdown("**Recomendaciones de backup**")
+    recs = azure_backups.generate_recommendations(data)
+    if not recs:
+        st.success("Sin recomendaciones: la protección está en buen estado.")
+    else:
+        sev_color = {"Crítico": "#c0392b", "Alto": "#c05621", "Medio": "#b7791f"}
+        for r in recs:
+            col = sev_color.get(r["severity"], "#6b7280")
+            with st.container(border=True):
+                a, b = st.columns([3.4, 1])
+                a.markdown(
+                    f"<div style='font-weight:700'>{r['title']}</div>"
+                    f"<div style='font-size:.8rem;color:#6b7280'>{r['reason']}</div>"
+                    f"<div style='font-size:.8rem;margin-top:2px'>"
+                    f"<b>Acción:</b> {r['action']}</div>", unsafe_allow_html=True)
+                b.markdown(
+                    f"<div style='color:{col};font-weight:800'>{r['severity']}</div>"
+                    f"<div style='font-size:.8rem'>{r['affected']} recursos</div>"
+                    f"<div style='font-size:.74rem;color:#8894a6'>{r['riesgo']}</div>",
+                    unsafe_allow_html=True)
+
+
+def _render_backup_detail(row, jobs) -> None:
+    """Detalle de un recurso: info, recuperación, política e historial."""
+    prot = _safe_str(row.get("protection"))
+    color = _BK_PROT_COLOR.get(prot, "#6b7280")
+    with st.container(border=True):
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:.6rem'>"
+            f"<span style='font-weight:800;font-size:1.05rem'>{_safe_str(row['resource'])}</span>"
+            f"<span style='background:{color}22;color:{color};padding:2px 10px;"
+            f"border-radius:6px;font-weight:700;font-size:.82rem'>{prot}</span>"
+            f"</div>", unsafe_allow_html=True)
+
+        d1, d2 = st.columns(2)
+        with d1:
+            st.markdown("**Información general**")
+            st.markdown(
+                f"- Tipo: {_safe_str(row.get('resourceType')) or '—'}\n"
+                f"- Suscripción: {_safe_str(row.get('subscriptionName'))}\n"
+                f"- Resource Group: {_safe_str(row.get('resourceGroup')) or '—'}\n"
+                f"- Región: {_safe_str(row.get('location')) or '—'}\n"
+                f"- Vault: {_safe_str(row.get('vault')) or '—'}")
+        with d2:
+            st.markdown("**Recuperación y RPO**")
+            rpo_act = row.get("rpoActualHours")
+            rpo_cfg = row.get("rpoHours")
+            breach = bool(row.get("rpoBreached"))
+            rpo_act_txt = (f"{rpo_act:.0f}" if isinstance(rpo_act, (int, float))
+                           and pd.notna(rpo_act) else "—")
+            rpo_cfg_txt = (f"{rpo_cfg:.0f}" if isinstance(rpo_cfg, (int, float))
+                           and pd.notna(rpo_cfg) else "—")
+            st.markdown(
+                f"- Último Recovery Point: {_safe_str(row.get('lastRecoveryPoint')) or '—'}\n"
+                f"- Edad del RP: {rpo_act_txt} h\n"
+                f"- RPO configurado: {rpo_cfg_txt} h\n"
+                f"- Estado de salud: {_safe_str(row.get('healthStatus')) or '—'}")
+            if breach:
+                st.warning("⚠ RPO incumplido")
+
+        st.markdown("**Política de backup**")
+        st.markdown(f"- Policy: {_safe_str(row.get('policyName')) or 'Sin política'}\n"
+                    f"- Último backup: {_safe_str(row.get('lastBackup')) or '—'} "
+                    f"({_safe_str(row.get('lastBackupStatus')) or '—'})")
+
+        # Historial: jobs del recurso.
+        if jobs is not None and not jobs.empty:
+            h = jobs[jobs["resource"].astype(str) == str(row.get("resource"))]
+            if not h.empty:
+                st.markdown("**Historial de ejecuciones**")
+                v = h[["startTime", "operation", "status", "durationMin",
+                       "errorMsg"]].rename(columns={
+                    "startTime": "Fecha", "operation": "Operación",
+                    "status": "Estado", "durationMin": "Duración (min)",
+                    "errorMsg": "Error"})
+                st.dataframe(v, use_container_width=True, hide_index=True)
 
 
 # ===========================================================================
@@ -2780,6 +3530,10 @@ def _render_area_shell(area_key: str, area_label: str, icon: str,
                 render_azure_inventory()
             elif area_key == "seguridad" and provider == "Azure":
                 render_azure_security()
+            elif area_key == "backups" and provider == "Azure":
+                render_azure_backups()
+            elif area_key == "costos" and provider == "Azure":
+                render_azure_costs()
             else:
                 _connected_placeholder(provider, area_label, icon)
 
@@ -2798,12 +3552,49 @@ def render_panel_main() -> None:
     area = _PANEL_BY_LABEL.get(area_label)
     if area:
         key, label, icon, description = area
-        _render_area_shell(key, label, icon, description)
+        # El area de estado de salud muestra el dashboard REAL (estado de las
+        # nubes), no una cascara por nube.
+        if key == "health":
+            render_health_dashboard()
+        else:
+            _render_area_shell(key, label, icon, description)
 
 
 # ===========================================================================
 # Main — router de vistas
 # ===========================================================================
+def render_app_login() -> None:
+    """Gate de acceso a la app (usuario propio). Previo al login de Azure."""
+    render_header()
+    st.markdown("<div style='height:.4rem'></div>", unsafe_allow_html=True)
+
+    c1, c2, c3 = st.columns([1, 1.1, 1])
+    with c2:
+        st.markdown(
+            "<div class='cops-section'><span class='bar'></span>"
+            "Acceso a PLAN-ADM</div>", unsafe_allow_html=True)
+        st.caption("Inicia sesión en la aplicación. Luego se solicitará el "
+                   "MFA de Azure para operar la nube.")
+
+        with st.form("app_login_form"):
+            user = st.text_input("Usuario", key="app_user")
+            pwd = st.text_input("Contraseña", type="password", key="app_pwd")
+            ok = st.form_submit_button("Ingresar", type="primary",
+                                       use_container_width=True)
+        if ok:
+            if app_auth.verify_user(user, pwd):
+                st.session_state["app_authed"] = True
+                st.session_state["app_user_name"] = user.strip()
+                st.session_state["view"] = "login"
+                st.rerun()
+            else:
+                st.error("Usuario o contraseña incorrectos.")
+
+        hint = app_auth.default_hint()
+        if hint:
+            st.caption(hint)
+
+
 def render_login_view() -> None:
     render_header()
     render_health_dashboard()
@@ -2811,20 +3602,26 @@ def render_login_view() -> None:
 
 
 def main() -> None:
-    st.session_state.setdefault("view", "login")
+    st.session_state.setdefault("view", "app_login")
+    st.session_state.setdefault("app_authed", False)
+    st.session_state.setdefault("theme", "claro")
 
-    # Reanudar sesion tras un F5 (una sola vez por carga del navegador).
+    # Aplicar tema (claro/oscuro) en cada render.
+    _apply_theme()
+
+    # Gate de la app: sin autenticacion propia, no se accede a nada mas.
+    if not st.session_state.get("app_authed"):
+        st.session_state["view"] = "app_login"
+        render_app_login()
+        return
+
+    # Ya autenticado en la app: reanudar sesion de nube tras un F5.
     _restore_session()
 
-    # Si se pierde la conexion (p.ej. tras logout), forzar login.
-    if st.session_state["view"] == "panel" and not _connected_clouds():
-        st.session_state["view"] = "login"
-
-    if st.session_state["view"] == "panel":
-        render_sidebar()
-        render_panel_main()
-    else:
-        render_login_view()
+    # Tras el gate se entra directo al panel (su inicio es el estado de salud).
+    # El login de cada nube vive en el sidebar.
+    render_sidebar()
+    render_panel_main()
 
 
 if __name__ == "__main__":
