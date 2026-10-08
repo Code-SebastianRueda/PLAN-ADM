@@ -607,7 +607,7 @@ RULE_COLUMNS = [
     "resourceGroup", "subscriptionId", "subscriptionName", "signalType",
     "firedTimes", "lastFired", "lastFiredAgo", "firstFired", "duration",
     "description", "alertRule", "alertId", "targetResourceType",
-    "ruleKind", "enabled", "condition", "actions",
+    "ruleKind", "enabled", "condition", "actions", "metricCriteria",
 ]
 
 # Endpoints de reglas por tipo. (proveedor, api-version, kind legible).
@@ -645,6 +645,26 @@ _OP_SYM = {
     "LessThan": "<", "LessThanOrEqual": "<=",
     "Equals": "=", "NotEquals": "!=",
 }
+
+
+def _metric_criteria(props: dict) -> dict:
+    """Extrae el primer criterio de METRICA de una regla metricAlert para poder
+    graficar la serie temporal: {metricName, aggregation, operator, threshold,
+    metricNamespace}. Vacio si no es una alerta de metrica con umbral estatico."""
+    crit = props.get("criteria", {}) or {}
+    all_of = crit.get("allOf") or []
+    for c in all_of:
+        metric = c.get("metricName") or c.get("name")
+        thr = c.get("threshold")
+        if metric and thr is not None:
+            return {
+                "metricName": metric,
+                "aggregation": (c.get("timeAggregation", "") or "Average"),
+                "operator": c.get("operator", "GreaterThan"),
+                "threshold": float(thr),
+                "metricNamespace": c.get("metricNamespace", "") or "",
+            }
+    return {}
 
 
 def _iso_duration_to_text(d: Optional[str]) -> str:
@@ -729,6 +749,68 @@ def _condition_text(props: dict, kind: str) -> str:
     return ""
 
 
+_METRICS_API = "2023-10-01"
+
+
+def metric_series(credential, sub_id, resource_id, metric_name, aggregation,
+                  fired_time=None, hours=6, metric_namespace="") -> pd.DataFrame:
+    """Serie temporal de una métrica del recurso alrededor del disparo.
+
+    Devuelve DataFrame [timestamp, value] (vacio si no se puede). Ventana:
+    centrada en fired_time ± hours/2 (o las ultimas `hours` si no hay fecha).
+    """
+    cols = ["timestamp", "value"]
+    if not (resource_id and metric_name):
+        return pd.DataFrame(columns=cols)
+    try:
+        fired = _parse_iso_dt(fired_time) if fired_time else None
+        now = dt.datetime.now(dt.timezone.utc)
+        if fired:
+            if fired.tzinfo is None:
+                fired = fired.replace(tzinfo=dt.timezone.utc)
+            start = fired - dt.timedelta(hours=hours / 2)
+            end = min(now, fired + dt.timedelta(hours=hours / 2))
+            if end <= start:
+                end = start + dt.timedelta(hours=hours)
+        else:
+            end = now
+            start = now - dt.timedelta(hours=hours)
+        timespan = f"{start.isoformat()}/{end.isoformat()}"
+        agg = (aggregation or "Average")
+        url = (f"{resource_id}/providers/Microsoft.Insights/metrics"
+               f"?api-version={_METRICS_API}&timespan={timespan}"
+               f"&interval=PT5M&metricnames={metric_name}&aggregation={agg}")
+        if metric_namespace:
+            url += f"&metricnamespace={metric_namespace}"
+        # resource_id ya es absoluto; _arm_get antepone el host via pipeline.
+        payload = _arm_get(credential, sub_id, url)
+        rows = []
+        agg_key = agg.lower()
+        for m in payload.get("value", []):
+            for ts in (m.get("timeseries", []) or []):
+                for dp in (ts.get("data", []) or []):
+                    val = dp.get(agg_key)
+                    if val is None:
+                        # algunos vienen con 'average'/'total' aunque se pida otro
+                        for k in ("average", "total", "maximum", "minimum", "count"):
+                            if dp.get(k) is not None:
+                                val = dp.get(k)
+                                break
+                    if val is not None:
+                        rows.append({"timestamp": dp.get("timeStamp"),
+                                     "value": round(float(val), 2)})
+        return pd.DataFrame(rows, columns=cols)
+    except Exception:  # noqa: BLE001
+        return pd.DataFrame(columns=cols)
+
+
+def _parse_iso_dt(s):
+    try:
+        return dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _action_groups_text(props: dict) -> str:
     """Nombres/ids de Action Groups asociados a la regla. '' si no hay."""
     try:
@@ -789,6 +871,7 @@ def _fetch_rule_endpoint(credential, sub_id, sub_name, provider, api, kind):
                 "enabled": bool(enabled),
                 "condition": _condition_text(props, kind),
                 "actions": _action_groups_text(props),
+                "metricCriteria": _metric_criteria(props) if kind == "Metric" else {},
             })
         return rows, None
     except HttpResponseError as exc:

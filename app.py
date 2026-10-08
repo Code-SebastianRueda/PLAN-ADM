@@ -50,6 +50,7 @@ except Exception:  # noqa: BLE001
 _LOGO_PATH = Path(__file__).parent / "Logo.svg"
 _ENVIRONMENT = "commercial"          # Ambiente UNICO. No hay seleccion de ambiente.
 _PROVIDERS = ["AWS", "Azure", "GCP", "OCI", "IBM Cloud"]
+_APP_VERSION = "0.9.0"               # Version de la app (incrementar en releases).
 
 # Portales AWS IAM Identity Center por cliente.
 # Cadena vacia = portal aun no configurado (se agregara su enlace mas adelante).
@@ -350,11 +351,19 @@ def _apply_theme() -> None:
         h1, h2, h3, h4, h5, h6 { color: #e8ebf2 !important; }
         .stCaption, [data-testid="stCaptionContainer"], small { color: #a7b0be !important; }
 
-        /* Header */
-        .cops-header { background: linear-gradient(100deg,#161c25 0%,#1b2430 100%)
-            !important; border-color: #2b3442 !important; }
-        .cops-header h1, .cops-header .sub { color: #e8ebf2 !important; }
+        /* Header (fondo claro hardcodeado -> oscuro) */
+        .cops-header, div.cops-header {
+            background: #161c25 !important;
+            background-image: linear-gradient(100deg,#161c25 0%,#1b2430 100%) !important;
+            border-color: #2b3442 !important; }
+        .cops-header .titles h1 { color: #6cb2ff !important; }
+        .cops-header .titles .sub { color: #a7b0be !important; }
         .cops-section { color: #e8ebf2 !important; }
+        /* Banners de overview / tarjetas de estado de nube (fondos claros) */
+        .cops-overview, .ccard { background: #161c25 !important;
+            border-color: #2b3442 !important; }
+        .ccard * { color: #e8ebf2 !important; }
+        .status-card { background: #1b2430 !important; }
 
         /* Tarjetas / metricas / contenedores con borde */
         [data-testid="stMetric"] { background: #1b2430 !important;
@@ -400,10 +409,10 @@ def _apply_theme() -> None:
 
 
 def _theme_toggle(key: str) -> None:
-    """Boton visible para alternar tema claro/oscuro."""
+    """Boton visible (primary) para alternar tema claro/oscuro."""
     actual = st.session_state.get("theme", "claro")
-    etiqueta = "🌙 Modo oscuro" if actual == "claro" else "☀️ Modo claro"
-    if st.button(etiqueta, key=key, use_container_width=True, type="secondary"):
+    etiqueta = "🌙  Oscuro" if actual == "claro" else "☀️  Claro"
+    if st.button(etiqueta, key=key, use_container_width=True, type="primary"):
         st.session_state["theme"] = "oscuro" if actual == "claro" else "claro"
         st.rerun()
 
@@ -1350,6 +1359,8 @@ _PANEL_AREAS = [
      "Servicios en proceso de retiro segun anuncios de Microsoft."),
     ("backups",   "1.7  Backups",       "💾",
      "Protección, cumplimiento y estado de backups por nube."),
+    ("creditos",  "ℹ️  Créditos",       "ℹ️",
+     "Equipo, colaboradores y versión de la aplicación."),
 ]
 _PANEL_LABELS = [a[1] for a in _PANEL_AREAS]
 _PANEL_BY_LABEL = {a[1]: a for a in _PANEL_AREAS}
@@ -2004,6 +2015,80 @@ def _render_alert_detail(row) -> None:
             st.markdown(
                 f"Regla **{estado.lower()}**. Sin disparos registrados en el "
                 "periodo seleccionado; no hay línea de tiempo de activación.")
+
+        # ── ¿Por qué se disparó? Gráfica de la métrica alrededor del disparo ──
+        crit = row.get("metricCriteria") or {}
+        if isinstance(crit, dict) and crit.get("metricName") and (fired or disparos > 0):
+            _render_alert_metric_chart(row, crit)
+
+
+def _render_alert_metric_chart(row, crit) -> None:
+    """Gráfica de la métrica de la alerta alrededor del disparo, con umbral y
+    zona de disparo resaltada (estilo 'Why did this alert fire?')."""
+    cred = _azure_credential()
+    res_id = _safe_str(row.get("resourceId"))
+    sub_id = _safe_str(row.get("subscriptionId"))
+    if cred is None or not res_id or not sub_id:
+        return
+    metric = crit.get("metricName")
+    agg = crit.get("aggregation", "Average")
+    threshold = crit.get("threshold")
+    op = crit.get("operator", "GreaterThan")
+    fired_time = _safe_str(row.get("lastFired")) or _safe_str(row.get("firstFired"))
+
+    st.markdown("**¿Por qué se disparó?** · métrica alrededor del disparo")
+    with st.spinner("Consultando la métrica…"):
+        serie = _cached_metric_series(cred, sub_id, res_id, metric, agg,
+                                      fired_time, crit.get("metricNamespace", ""))
+    if serie is None or serie.empty:
+        st.caption("Azure Monitor no devolvió serie para esta métrica/recurso "
+                   "(puede no exponer métricas o requerir permiso de lectura).")
+        return
+
+    if not _PLOTLY:
+        st.line_chart(serie.set_index("timestamp")["value"])
+        return
+
+    import plotly.graph_objects as go
+    s = serie.copy()
+    s["timestamp"] = pd.to_datetime(s["timestamp"], errors="coerce")
+    s = s.dropna(subset=["timestamp"]).sort_values("timestamp")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=s["timestamp"], y=s["value"], mode="lines", name=f"{agg}({metric})",
+        line=dict(color="#2b7fff", width=2),
+        hovertemplate="%{x}<br>%{y}<extra></extra>"))
+    # Línea de umbral.
+    if threshold is not None:
+        fig.add_hline(y=threshold, line_dash="dash", line_color="#c0392b",
+                      annotation_text=f"Umbral {op} {threshold}",
+                      annotation_position="top left")
+        # Resaltar los puntos que cruzan el umbral (zona de disparo).
+        gt = op.lower().startswith("greater")
+        breach = s[(s["value"] >= threshold) if gt else (s["value"] <= threshold)]
+        if not breach.empty:
+            fig.add_vrect(x0=breach["timestamp"].min(), x1=breach["timestamp"].max(),
+                          fillcolor="#c0392b", opacity=0.12, line_width=0)
+    # Marcar el momento del disparo.
+    ft = pd.to_datetime(fired_time, errors="coerce") if fired_time else None
+    if ft is not None and pd.notna(ft):
+        fig.add_vline(x=ft, line_color="#c05621", line_width=1.5,
+                      annotation_text="Disparo", annotation_position="top right")
+    fig.update_layout(height=260, margin=dict(l=0, r=0, t=20, b=0),
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      xaxis_title="", yaxis_title=metric, showlegend=True,
+                      legend=dict(orientation="h", y=-0.2))
+    st.plotly_chart(fig, use_container_width=True)
+    val_actual = s["value"].iloc[-1] if not s.empty else None
+    if val_actual is not None:
+        st.caption(f"Último valor: {val_actual} · umbral: {op} {threshold}")
+
+
+@st.cache_data(ttl=180, show_spinner=False)
+def _cached_metric_series(_cred, sub_id, res_id, metric, agg, fired_time, ns):
+    """Serie temporal de la métrica (cacheada 3 min)."""
+    return azure_alerts.metric_series(_cred, sub_id, res_id, metric, agg,
+                                      fired_time, hours=6, metric_namespace=ns)
 
 
 # ===========================================================================
@@ -3538,6 +3623,69 @@ def _render_area_shell(area_key: str, area_label: str, icon: str,
                 _connected_placeholder(provider, area_label, icon)
 
 
+# ===========================================================================
+# Créditos
+# ===========================================================================
+# Equipo y colaboradores. Completar con los nombres/roles reales del equipo.
+_CREDITS_TEAM = [
+    # {"nombre": "Nombre Apellido", "rol": "Autor principal", "detalle": "..."},
+]
+_CREDITS_THANKS = [
+    # "Colaborador / área de apoyo",
+]
+
+
+def render_creditos() -> None:
+    """Apartado de créditos: equipo, colaboradores y versión.
+
+    No llama render_header(): render_panel_main() ya lo hizo (evita duplicar la
+    key del boton de tema)."""
+    st.markdown("<div class='cops-section'><span class='bar'></span>"
+                "Créditos</div>", unsafe_allow_html=True)
+    st.caption("Equipo, colaboradores y versión de la aplicación.")
+
+    c1, c2 = st.columns([1.4, 1])
+    with c1:
+        st.markdown("### Equipo")
+        if _CREDITS_TEAM:
+            for m in _CREDITS_TEAM:
+                st.markdown(
+                    f"<div style='border:1px solid #e3e8ef;border-radius:10px;"
+                    f"padding:.6rem .8rem;margin-bottom:.5rem'>"
+                    f"<div style='font-weight:700'>{m.get('nombre','')}</div>"
+                    f"<div style='font-size:.82rem;color:#2b7fff;font-weight:600'>"
+                    f"{m.get('rol','')}</div>"
+                    f"<div style='font-size:.8rem;color:#8894a6'>{m.get('detalle','')}</div>"
+                    f"</div>", unsafe_allow_html=True)
+        else:
+            st.info("Aquí irá el equipo que creó la aplicación. "
+                    "Edita `_CREDITS_TEAM` en app.py para agregar nombres y roles.")
+
+        st.markdown("### Agradecimientos")
+        if _CREDITS_THANKS:
+            for t in _CREDITS_THANKS:
+                st.markdown(f"- {t}")
+        else:
+            st.caption("Pendiente de completar.")
+
+    with c2:
+        st.markdown("### Aplicación")
+        st.markdown(
+            f"<div style='border:1px solid #e3e8ef;border-radius:10px;"
+            f"padding:.8rem 1rem'>"
+            f"<div style='font-weight:800;color:#0050A0;font-size:1.05rem'>"
+            f"PLAN-ADM · Cloud Operations</div>"
+            f"<div style='font-size:.85rem;color:#8894a6;margin-top:.2rem'>"
+            f"Plan de Administración Operativa Cloud</div>"
+            f"<div style='margin-top:.6rem;font-size:.85rem'>"
+            f"<b>Versión:</b> {_APP_VERSION}<br>"
+            f"<b>Nubes:</b> Azure (activa) · AWS, GCP, OCI, IBM (próximamente)<br>"
+            f"<b>Áreas:</b> Salud, Costos, Seguridad, Inventario, Alertamiento, "
+            f"Deprecados, Backups</div>"
+            f"</div>", unsafe_allow_html=True)
+        st.caption("© Kyndryl Cloud Operations")
+
+
 def render_panel_main() -> None:
     render_header()
 
@@ -3556,6 +3704,8 @@ def render_panel_main() -> None:
         # nubes), no una cascara por nube.
         if key == "health":
             render_health_dashboard()
+        elif key == "creditos":
+            render_creditos()
         else:
             _render_area_shell(key, label, icon, description)
 
