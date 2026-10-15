@@ -1,6 +1,15 @@
 # Sesion persistida (contiene tokens) — NUNCA commitear
 .plan_adm_session.json
 
+# Base de datos local (SQLite) — contiene hashes de usuarios y sesiones
+planadm.db
+*.sqlite
+*.sqlite3
+_test_*.db
+
+# Entorno
+.env
+
 # Python
 __pycache__/
 *.py[cod]

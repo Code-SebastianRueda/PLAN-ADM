@@ -1,0 +1,93 @@
+# ============================================================
+# PLAN-ADM — orquestación: app + PostgreSQL + Redis
+# ============================================================
+# Uso:
+#   1) Copia .env.example a .env y ajusta los valores.
+#   2) docker compose up -d --build
+#   3) Abre http://<host>:8501
+#
+# PostgreSQL persiste en el volumen 'pgdata'. Redis es efímero (solo caché).
+
+services:
+  app:
+    build: .
+    image: plan-adm:latest
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      # Base de datos (apunta al servicio 'db').
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-planadm}:${POSTGRES_PASSWORD:-planadm}@db:5432/${POSTGRES_DB:-planadm}"
+      # Caché / sesiones compartidas.
+      REDIS_URL: "redis://redis:6379/0"
+      # Secretos: 'env' (lee del entorno/.env) o 'aws' (Secrets Manager).
+      SECRETS_BACKEND: "${SECRETS_BACKEND:-env}"
+      SECRETS_NAME: "${SECRETS_NAME:-planadm/secrets}"
+      AWS_REGION: "${AWS_REGION:-us-east-1}"
+      # Usuario admin inicial (seed). Cámbialo tras el primer login.
+      PLANADM_USER: "${PLANADM_USER:-admin}"
+      PLANADM_PASSWORD: "${PLANADM_PASSWORD:-planadm2026}"
+      # En contenedor (Linux sin llavero) la caché de token de Azure va sin cifrar.
+      AZURE_TOKEN_CACHE_UNENCRYPTED: "true"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # Refresco diario desatendido (6:00 AM Colombia = 11:00 UTC).
+  # Usa la MISMA imagen que la app, pero su comando es el planificador.
+  # Inofensivo hasta que ORBIT_DAILY_CLIENTS tenga Service Principals.
+  scheduler:
+    build: .
+    image: plan-adm:latest
+    restart: unless-stopped
+    command: ["python", "scheduler.py"]
+    environment:
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-planadm}:${POSTGRES_PASSWORD:-planadm}@db:5432/${POSTGRES_DB:-planadm}"
+      REDIS_URL: "redis://redis:6379/0"
+      SECRETS_BACKEND: "${SECRETS_BACKEND:-env}"
+      SECRETS_NAME: "${SECRETS_NAME:-planadm/secrets}"
+      AWS_REGION: "${AWS_REGION:-us-east-1}"
+      AZURE_TOKEN_CACHE_UNENCRYPTED: "true"
+      # Hora objetivo (UTC). 11:00 UTC = 06:00 America/Bogota.
+      ORBIT_REFRESH_UTC_HOUR: "${ORBIT_REFRESH_UTC_HOUR:-11}"
+      ORBIT_REFRESH_UTC_MINUTE: "${ORBIT_REFRESH_UTC_MINUTE:-0}"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-planadm}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-planadm}"
+      POSTGRES_DB: "${POSTGRES_DB:-planadm}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-planadm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Puerto expuesto para herramientas externas (pgAdmin, DBeaver).
+    # DEV: 5432 al host. PROD: comenta estas líneas o usa "127.0.0.1:5432:5432"
+    # para no exponer la DB a internet.
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    # Caché efímera; sin volumen.
+
+volumes:
+  pgdata:

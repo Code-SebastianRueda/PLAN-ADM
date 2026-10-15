@@ -84,9 +84,36 @@ class AzureConnection:
 # ---------------------------------------------------------------------------
 # Credenciales
 # ---------------------------------------------------------------------------
+def _allow_unencrypted() -> bool:
+    """Decide si permitir cache de token SIN cifrar.
+
+    En Windows/Mac hay llavero del SO (cifrado disponible). En un contenedor
+    Linux / sesión SSH headless no hay libsecret ni display, y azure-identity
+    falla con 'Cache encryption is impossible'. En ese caso se permite el
+    almacenamiento sin cifrar (el token igual queda dentro del contenedor,
+    protegido por el aislamiento del contenedor).
+
+    Controlable con AZURE_TOKEN_CACHE_UNENCRYPTED=true/false; por defecto se
+    autodetecta: sin cifrado en Linux sin DISPLAY (típico contenedor)."""
+    import os
+    import sys
+    env = os.environ.get("AZURE_TOKEN_CACHE_UNENCRYPTED", "").lower()
+    if env in ("1", "true", "yes", "on"):
+        return True
+    if env in ("0", "false", "no", "off"):
+        return False
+    # Autodetección: Linux sin entorno gráfico -> sin cifrar.
+    if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+        return True
+    return False
+
+
 def _cache_opts() -> "TokenCachePersistenceOptions":
     # Cache persistente para reutilizar el token entre ejecuciones.
-    return TokenCachePersistenceOptions(name="plan-adm-azure")
+    return TokenCachePersistenceOptions(
+        name="plan-adm-azure",
+        allow_unencrypted_storage=_allow_unencrypted(),
+    )
 
 
 def _build_credential(prompt_callback=None, record=None,

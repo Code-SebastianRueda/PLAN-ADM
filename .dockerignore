@@ -1,0 +1,23 @@
+# No copiar al contexto de build (más liviano y seguro).
+.git
+.gitignore
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Secretos y estado local — NUNCA dentro de la imagen
+.env
+.streamlit/secrets.toml
+.plan_adm_session.json
+planadm.db
+*.sqlite
+*.sqlite3
+
+# Diagnósticos temporales
+_diag_*.py
+
+# Docs / infra que no necesita la imagen
+docs/
+*.md

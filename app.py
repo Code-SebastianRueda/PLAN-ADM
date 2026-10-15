@@ -37,6 +37,9 @@ import azure_security
 import azure_backups
 import azure_costs
 import app_auth
+import db
+import data_cache
+import secrets_provider  # noqa: F401 (carga .env al importar)
 
 try:
     import plotly.express as px
@@ -47,7 +50,15 @@ except Exception:  # noqa: BLE001
 # ===========================================================================
 # Configuracion de pagina
 # ===========================================================================
-_LOGO_PATH = Path(__file__).parent / "Logo.svg"
+_APP_NAME = "Kyndryl Orbit"          # Nombre de la aplicacion.
+_APP_TAGLINE = "Multi-Cloud Automation & Governance"
+_LOGO_PATH = Path(__file__).parent / "Orbit.png"
+# Fallback al logo anterior si Orbit.png no estuviera presente.
+if not _LOGO_PATH.exists():
+    _alt = Path(__file__).parent / "Logo.svg"
+    if _alt.exists():
+        _LOGO_PATH = _alt
+_LOGO_IS_PNG = _LOGO_PATH.suffix.lower() == ".png"
 _ENVIRONMENT = "commercial"          # Ambiente UNICO. No hay seleccion de ambiente.
 _PROVIDERS = ["AWS", "Azure", "GCP", "OCI", "IBM Cloud"]
 _APP_VERSION = "0.9.0"               # Version de la app (incrementar en releases).
@@ -61,8 +72,8 @@ _AWS_CLIENTS = {
 }
 
 st.set_page_config(
-    page_title="PLAN-ADM | Cloud Operations",
-    page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else "☁️",
+    page_title="Kyndryl Orbit · Multi-Cloud Automation & Governance",
+    page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else "🛰️",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -319,115 +330,12 @@ st.markdown(
 
 
 # ===========================================================================
-# Tema claro / oscuro (toggle en runtime)
-# ===========================================================================
-def _apply_theme() -> None:
-    """Inyecta overrides CSS si el tema activo es oscuro.
-
-    El CSS base usa variables en :root (--surface, --ink, etc.). En modo oscuro
-    solo se reescriben esas variables + los fondos nativos de Streamlit, sin
-    tocar el resto del diseño."""
-    if st.session_state.get("theme", "claro") != "oscuro":
-        return
-    st.markdown(
-        """
-        <style>
-        /* ===== TEMA OSCURO (cobertura amplia) ===== */
-        :root {
-            --ink: #e8ebf2; --muted: #a7b0be; --line: #2b3442;
-            --surface: #161c25; --surface-2: #0f141b;
-            --kblue: #4a9eff; --kblue-dark: #2b7fff;
-        }
-        .stApp, html, body { background: #0f141b !important; color: #e8ebf2 !important; }
-        .block-container { background: #0f141b !important; }
-        section[data-testid="stSidebar"] { background: #161c25 !important; }
-        section[data-testid="stSidebar"] * { color: #e8ebf2 !important; }
-
-        /* Texto general: forzar claro salvo donde se defina color propio vivo */
-        .stApp p, .stApp span, .stApp div, .stApp label, .stApp li,
-        .stApp td, .stApp th, .stMarkdown, [data-testid="stMarkdownContainer"] {
-            color: #e8ebf2;
-        }
-        h1, h2, h3, h4, h5, h6 { color: #e8ebf2 !important; }
-        .stCaption, [data-testid="stCaptionContainer"], small { color: #a7b0be !important; }
-
-        /* Header (fondo claro hardcodeado -> oscuro) */
-        .cops-header, div.cops-header {
-            background: #161c25 !important;
-            background-image: linear-gradient(100deg,#161c25 0%,#1b2430 100%) !important;
-            border-color: #2b3442 !important; }
-        .cops-header .titles h1 { color: #6cb2ff !important; }
-        .cops-header .titles .sub { color: #a7b0be !important; }
-        .cops-section { color: #e8ebf2 !important; }
-        /* Banners de overview / tarjetas de estado de nube (fondos claros) */
-        .cops-overview, .ccard { background: #161c25 !important;
-            border-color: #2b3442 !important; }
-        .ccard * { color: #e8ebf2 !important; }
-        .status-card { background: #1b2430 !important; }
-
-        /* Tarjetas / metricas / contenedores con borde */
-        [data-testid="stMetric"] { background: #1b2430 !important;
-            border-color: #2b3442 !important; }
-        [data-testid="stVerticalBlockBorderWrapper"] {
-            background: #161c25 !important; border-color: #2b3442 !important; }
-        [data-testid="stExpander"] { background: #161c25 !important;
-            border-color: #2b3442 !important; }
-        [data-testid="stExpander"] summary { color: #e8ebf2 !important; }
-
-        /* DataFrames / tablas */
-        .stDataFrame, [data-testid="stDataFrame"], [data-testid="stTable"] {
-            background: #161c25 !important; color: #e8ebf2 !important; }
-        .stDataFrame [role="columnheader"], .stDataFrame [role="gridcell"] {
-            color: #e8ebf2 !important; }
-
-        /* Inputs, selects, textareas */
-        [data-baseweb="select"] > div, .stTextInput input, .stNumberInput input,
-        .stTextArea textarea, [data-baseweb="input"] {
-            background: #1b2430 !important; color: #e8ebf2 !important;
-            border-color: #2b3442 !important; }
-        [data-baseweb="popover"], [role="listbox"] { background: #1b2430 !important; }
-        [role="option"] { color: #e8ebf2 !important; }
-
-        /* Radios / tabs */
-        [data-testid="stRadio"] label, [data-baseweb="tab"] { color: #e8ebf2 !important; }
-
-        /* Botones (dejar los primary con su azul) */
-        .stButton > button { background: #1b2430; color: #e8ebf2;
-            border: 1px solid #2b3442; }
-        .stButton > button[kind="primary"] { background: #2b7fff; color: #fff; }
-
-        /* Avisos (st.info/success/warning) un poco mas oscuros */
-        [data-testid="stAlert"] { background: #1b2430 !important; }
-
-        /* Barras de fondo claras -> oscurecer */
-        div[style*="background:#eef1f6"], div[style*="background: #eef1f6"] {
-            background: #243040 !important; }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _theme_toggle(key: str) -> None:
-    """Boton visible (primary) para alternar tema claro/oscuro."""
-    actual = st.session_state.get("theme", "claro")
-    etiqueta = "🌙  Oscuro" if actual == "claro" else "☀️  Claro"
-    if st.button(etiqueta, key=key, use_container_width=True, type="primary"):
-        st.session_state["theme"] = "oscuro" if actual == "claro" else "claro"
-        st.rerun()
-
-
-# ===========================================================================
 # Cabecera
 # ===========================================================================
 def render_header() -> None:
-    # Fila superior: espacio + boton de tema arriba a la derecha (todas las vistas).
-    _, tcol = st.columns([4, 1.3])
-    with tcol:
-        _theme_toggle("theme_header")
-
+    _mime = "image/png" if _LOGO_IS_PNG else "image/svg+xml"
     logo_html = (
-        f"<div class='logo'><img src='data:image/svg+xml;base64,{_logo_b64()}'/></div>"
+        f"<div class='logo'><img src='data:{_mime};base64,{_logo_b64()}'/></div>"
         if _LOGO_PATH.exists() else "<div class='logo'></div>"
     )
     st.markdown(
@@ -435,8 +343,8 @@ def render_header() -> None:
         <div class='cops-header'>
             {logo_html}
             <div class='titles'>
-                <h1>☁️ Plan de Administracion Operativa Cloud</h1>
-                <div class='sub'>Cloud Operations Dashboard · Estado e inicio de sesion multicloud</div>
+                <h1>Kyndryl Orbit</h1>
+                <div class='sub'>Multi-Cloud Automation &amp; Governance</div>
             </div>
         </div>
         """,
@@ -1279,10 +1187,10 @@ def render_sidebar() -> None:
         if _LOGO_PATH.exists():
             st.image(str(_LOGO_PATH))
         st.markdown(
-            "<div style='font-weight:800;color:#0050A0;font-size:1rem;margin:.2rem 0 .1rem;'>"
-            "PLAN-ADM</div>"
-            "<div style='color:#8894a6;font-size:.74rem;margin-bottom:.6rem;'>"
-            "Cloud Operations</div>",
+            "<div style='font-weight:800;color:#0050A0;font-size:1.1rem;margin:.2rem 0 .1rem;'>"
+            "Kyndryl Orbit</div>"
+            "<div style='color:#8894a6;font-size:.72rem;margin-bottom:.6rem;'>"
+            "Multi-Cloud Automation &amp; Governance</div>",
             unsafe_allow_html=True,
         )
         st.divider()
@@ -2180,11 +2088,20 @@ def render_azure_costs() -> None:
     if do_refresh:
         _cached_costs.clear()
 
+    # Caché DIARIA persistente: consulta Azure una vez al día por alcance y
+    # guarda el snapshot en la DB. "Actualizar" fuerza una consulta nueva.
     with st.spinner("Consultando Azure Cost Management…"):
-        data = _cached_costs(cred, subs_key, chosen, days)
+        data, _src, _cap = data_cache.get_or_fetch(
+            area="costos", scope_key=subs_key,
+            fetch_fn=lambda: _cached_costs(cred, subs_key, chosen, days),
+            kpi_fn=lambda d: azure_costs.kpis(d),
+            force=do_refresh)
 
     cur = data.get("currency", "")
     fetched = data.get("fetched_at", "")
+    if _src == "cache":
+        st.caption(f"📅 Datos del snapshot diario · guardado: {_cap[:16]} "
+                   "· pulsa Actualizar para forzar una consulta nueva.")
     cost_status = data.get("cost_status", "error")
     adv_status = data.get("advisor_status", "error")
     errors = data.get("errors") or []
@@ -2566,12 +2483,17 @@ def render_azure_backups() -> None:
         _cached_backups.clear()
 
     with st.spinner("Consultando Recovery Services (vaults, items y jobs)…"):
-        data = _cached_backups(cred, subs_key, chosen, days)
+        data, _src, _cap = data_cache.get_or_fetch(
+            area="backups", scope_key=subs_key,
+            fetch_fn=lambda: _cached_backups(cred, subs_key, chosen, days),
+            kpi_fn=lambda d: azure_backups.kpis(d), force=do_refresh)
 
     fetched = data.get("fetched_at", "")
     errors = data.get("errors") or []
     scanned = data.get("subscriptions_scanned", len(chosen))
     n_vaults = data.get("vaults", 0)
+    if _src == "cache":
+        st.caption(f"📅 Snapshot diario · guardado: {_cap[:16]} · Actualizar para refrescar.")
     st.caption(f"Suscripciones consultadas: {scanned} · Vaults: {n_vaults} · "
                f"Última sincronización: {fetched}")
     if errors:
@@ -2921,7 +2843,12 @@ def render_azure_security() -> None:
         _cached_security.clear()
 
     with st.spinner("Consultando Defender for Cloud y Azure Advisor…"):
-        df_full = _cached_security(cred, subs_key, chosen)
+        df_full, _src, _cap = data_cache.get_or_fetch(
+            area="seguridad", scope_key=subs_key,
+            fetch_fn=lambda: _cached_security(cred, subs_key, chosen),
+            kpi_fn=lambda d: azure_security.kpis(d), force=do_refresh)
+    if _src == "cache":
+        st.caption(f"📅 Snapshot diario · guardado: {_cap[:16]} · Actualizar para refrescar.")
 
     # Estado de fuentes (no romper si una falla).
     fetched = df_full.attrs.get("fetched_at", "")
@@ -3289,7 +3216,12 @@ def render_azure_inventory() -> None:
         _cached_inventory.clear()
 
     with st.spinner("Consultando Azure Resource Graph…"):
-        df = _cached_inventory(cred, subs_key, chosen)
+        df, _src, _cap = data_cache.get_or_fetch(
+            area="inventario", scope_key=subs_key,
+            fetch_fn=lambda: _cached_inventory(cred, subs_key, chosen),
+            kpi_fn=lambda d: azure_inventory.kpis(d), force=do_refresh)
+    if _src == "cache":
+        st.caption(f"📅 Snapshot diario · guardado: {_cap[:16]} · Actualizar para refrescar.")
 
     fetched = df.attrs.get("fetched_at", "")
     errors = df.attrs.get("errors") or []
@@ -3506,11 +3438,16 @@ def _render_azure_deprecations_impl() -> None:
         _cached_deprecations.clear()
 
     with st.spinner("Consultando Azure Advisor…"):
-        df = _cached_deprecations(cred, subs_key, chosen)
+        df, _src, _cap = data_cache.get_or_fetch(
+            area="deprecados", scope_key=subs_key,
+            fetch_fn=lambda: _cached_deprecations(cred, subs_key, chosen),
+            kpi_fn=lambda d: azure_deprecations.summary(d), force=do_refresh)
 
     fetched = df.attrs.get("fetched_at", "")
     errors = df.attrs.get("errors") or []
     scanned = df.attrs.get("subscriptions_scanned", len(chosen))
+    if _src == "cache":
+        st.caption(f"📅 Snapshot diario · guardado: {_cap[:16]} · Actualizar para refrescar.")
     st.caption(f"Suscripciones consultadas: {scanned} · Última consulta: {fetched}")
     if errors:
         # Deduplicar avisos (muchas subs suelen fallar con el mismo motivo).
@@ -3674,9 +3611,9 @@ def render_creditos() -> None:
             f"<div style='border:1px solid #e3e8ef;border-radius:10px;"
             f"padding:.8rem 1rem'>"
             f"<div style='font-weight:800;color:#0050A0;font-size:1.05rem'>"
-            f"PLAN-ADM · Cloud Operations</div>"
+            f"Kyndryl Orbit</div>"
             f"<div style='font-size:.85rem;color:#8894a6;margin-top:.2rem'>"
-            f"Plan de Administración Operativa Cloud</div>"
+            f"Multi-Cloud Automation &amp; Governance</div>"
             f"<div style='margin-top:.6rem;font-size:.85rem'>"
             f"<b>Versión:</b> {_APP_VERSION}<br>"
             f"<b>Nubes:</b> Azure (activa) · AWS, GCP, OCI, IBM (próximamente)<br>"
@@ -3722,7 +3659,7 @@ def render_app_login() -> None:
     with c2:
         st.markdown(
             "<div class='cops-section'><span class='bar'></span>"
-            "Acceso a PLAN-ADM</div>", unsafe_allow_html=True)
+            "Acceso a Kyndryl Orbit</div>", unsafe_allow_html=True)
         st.caption("Inicia sesión en la aplicación. Luego se solicitará el "
                    "MFA de Azure para operar la nube.")
 
@@ -3751,13 +3688,22 @@ def render_login_view() -> None:
     render_login()
 
 
+@st.cache_resource(show_spinner=False)
+def _bootstrap() -> bool:
+    """Inicializa la DB y siembra el admin inicial. Una sola vez por proceso.
+    Si la DB no está disponible, la app sigue con backends locales."""
+    try:
+        db.init_db()
+        app_auth.ensure_seed()
+    except Exception:  # noqa: BLE001
+        pass
+    return True
+
+
 def main() -> None:
+    _bootstrap()
     st.session_state.setdefault("view", "app_login")
     st.session_state.setdefault("app_authed", False)
-    st.session_state.setdefault("theme", "claro")
-
-    # Aplicar tema (claro/oscuro) en cada render.
-    _apply_theme()
 
     # Gate de la app: sin autenticacion propia, no se accede a nada mas.
     if not st.session_state.get("app_authed"):
