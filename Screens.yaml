@@ -1,15 +1,338 @@
-If(
-    !varBuscar,
-    Tabla1,
-    Filter(
-        Tabla1,
-        (ddAnalistaEncargadoUAC.Selected.Value = "Todos" || IsBlank(ddAnalistaEncargadoUAC.Selected.Value) || Upper(Trim(Text(ANALISTAENCARGADOUAC))) = Upper(Trim(ddAnalistaEncargadoUAC.Selected.Value))) &&
-        (ddSponsor.Selected.Value = "Todos" || IsBlank(ddSponsor.Selected.Value) || Upper(Trim(Text(SPONSOR))) = Upper(Trim(ddSponsor.Selected.Value))) &&
-        (ddArea.Selected.Value = "Todas" || IsBlank(ddArea.Selected.Value) || Upper(Trim(Text(AREA))) = Upper(Trim(ddArea.Selected.Value))) &&
-        (ddCausal.Selected.Value = "Todas" || IsBlank(ddCausal.Selected.Value) || Upper(Trim(Text(CAUSAL))) = Upper(Trim(ddCausal.Selected.Value))) &&
-        (ddSubcausal.Selected.Value = "Todas" || IsBlank(ddSubcausal.Selected.Value) || Upper(Trim(Text(SUBCAUSAL))) = Upper(Trim(ddSubcausal.Selected.Value))) &&
-        (ddResponsable.Selected.Value = "Todos" || IsBlank(ddResponsable.Selected.Value) || Upper(Trim(Text(RESPONSABLEOPERATIVO))) = Upper(Trim(ddResponsable.Selected.Value))) &&
-        (ddEstado.Selected.Value = "Todos" || IsBlank(ddEstado.Selected.Value) || Upper(Trim(Text(ESTADO))) = Upper(Trim(ddEstado.Selected.Value))) &&
-        (ddMesFinal.Selected.Value = "Todos" || IsBlank(ddMesFinal.Selected.Value) || Upper(Trim(Text(MESFINAL))) = Upper(Trim(ddMesFinal.Selected.Value)))
-    )
-)
+Screens:
+  scrCrearCaso:
+    Properties:
+      Fill: =RGBA(244, 243, 252, 1)
+      LoadingSpinnerColor: =RGBA(84, 32, 168, 1)
+    Children:
+
+      # ==========================================
+      # 1. ENCABEZADO CORPORATIVO
+      # ==========================================
+      recHeaderCrear:
+        Control: Rectangle@2.3.0
+        Properties:
+          X: =0
+          Y: =0
+          Width: =Parent.Width
+          Height: =Parent.Height * 0.10
+          Fill: =RGBA(41, 11, 88, 1)
+
+      lblLogoCrear:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="CHUBB"
+          X: =Parent.Width * 0.025
+          Y: =Parent.Height * 0.02
+          Width: =Parent.Width * 0.18
+          Height: =Parent.Height * 0.06
+          Color: =Color.White
+          Size: =30
+          FontWeight: =FontWeight.Bold
+
+      lblTituloCrear:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="＋  Creando Caso - Nuevo Alertamiento"
+          X: =Parent.Width * 0.22
+          Y: =Parent.Height * 0.02
+          Width: =Parent.Width * 0.45
+          Height: =Parent.Height * 0.06
+          Color: =Color.White
+          Size: =22
+          FontWeight: =FontWeight.Bold
+
+      btnVolver:
+        Control: Button@0.0.45
+        Properties:
+          Text: ="❮ Volver"
+          X: =Parent.Width * 0.85
+          Y: =Parent.Height * 0.022
+          Width: =Parent.Width * 0.12
+          Height: =Parent.Height * 0.055
+          BasePaletteColor: =RGBA(84, 32, 168, 1)
+          OnSelect: =Navigate(scrPanelAlertamientos, ScreenTransition.Fade)
+
+
+      # ==========================================
+      # 2. CONTENEDOR PRINCIPAL DE FORMULARIO
+      # ==========================================
+      recFormulario:
+        Control: Rectangle@2.3.0
+        Properties:
+          X: =Parent.Width * 0.02
+          Y: =Parent.Height * 0.13
+          Width: =Parent.Width * 0.96
+          Height: =Parent.Height * 0.83
+          Fill: =Color.White
+          BorderColor: =RGBA(225, 221, 240, 1)
+          BorderThickness: =1
+
+      lblSubtituloForm:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="* Todos los campos son obligatorios"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.15
+          Width: =400
+          Height: =30
+          Color: =RGBA(166, 91, 0, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+
+      # --- COLUMNA IZQUIERDA DE CAMPOS ---
+
+      # 1. Fecha Inicial del Alertamiento
+      lblFormFecha:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="1. Agregue fecha inicial del alertamiento"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.20
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      dpFechaCreacion:
+        Control: DatePicker@0.0.46
+        Properties:
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.23
+          Width: =Parent.Width * 0.42
+          Height: =40
+
+      # 2. Asigne el responsable de la citada
+      lblFormResponsableCitada:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="2. Asigne el responsable de la citada"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.30
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormResponsableCitada:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.33
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione...", "Persona 1", "Persona 2"]
+
+      # 3. Sponsor / Área encargada
+      lblFormSponsorArea:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="3. Sponsor / Área encargada"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.40
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormSponsor:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.43
+          Width: =Parent.Width * 0.20
+          Height: =40
+          Items: =["Sponsor...", "Sponsor A", "Sponsor B", "Sponsor C"]
+
+      ddFormArea:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.255
+          Y: =Parent.Height * 0.43
+          Width: =Parent.Width * 0.205
+          Height: =40
+          Items: =["Área...", "UAC", "Infraestructura", "Aplicaciones"]
+
+      # 4. Ingrese el área encargada
+      lblFormAreaEncargada:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="4. Ingrese el área encargada"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.50
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormAreaEncargada:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.53
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione área...", "UAC", "Área Técnica", "Área Operativa"]
+
+      # 5. Asigne el responsable de la ejecución
+      lblFormResponsableEjecucion:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="5. Asigne el responsable de la ejecución"
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.60
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormResponsableEjecucion:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.04
+          Y: =Parent.Height * 0.63
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione responsable...", "Responsable 1", "Responsable 2"]
+
+
+      # --- COLUMNA DERECHA DE CAMPOS ---
+
+      # 6. Tipo de alertamiento
+      lblFormTipoAlertamiento:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="6. Tipo de alertamiento"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.20
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormTipoAlertamiento:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.23
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione tipo...", "Operativo", "Técnico", "Comercial"]
+
+      # 7. Seleccione el método
+      lblFormMetodo:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="7. Seleccione el método"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.30
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormMetodo:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.33
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione método...", "Método A", "Método B"]
+
+      # 8. Seleccione el submotivo
+      lblFormSubmotivo:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="8. Seleccione el submotivo"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.40
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      ddFormSubmotivo:
+        Control: Dropdown@0.0.45
+        Properties:
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.43
+          Width: =Parent.Width * 0.42
+          Height: =40
+          Items: =["Seleccione submotivo...", "Proceso", "Sistema", "Servicio", "Cliente"]
+
+      # 9. Escriba la problemática
+      lblFormProblematica:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="9. Escriba la problemática"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.50
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      txtFormProblematica:
+        Control: TextCanvas@0.0.38
+        Properties:
+          Text: =""
+          HintText: ="Describa brevemente la problemática..."
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.53
+          Width: =Parent.Width * 0.42
+          Height: =40
+
+      # 10. Soporte (opcional)
+      lblFormSoporte:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="10. Soporte (opcional)"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.60
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      txtFormSoporte:
+        Control: TextCanvas@0.0.38
+        Properties:
+          Text: =""
+          HintText: ="Enlace o referencia de soporte..."
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.63
+          Width: =Parent.Width * 0.42
+          Height: =40
+
+
+      # ==========================================
+      # 3. BOTÓN DE ENVÍO FINAL
+      # ==========================================
+      btnEnviarCaso:
+        Control: Button@0.0.45
+        Properties:
+          Text: ="✓  Enviar Caso"
+          X: =Parent.Width * 0.35
+          Y: =Parent.Height * 0.77
+          Width: =Parent.Width * 0.30
+          Height: =Parent.Height * 0.075
+          BasePaletteColor: =RGBA(8, 117, 44, 1)
+          OnSelect: |-
+            =If(
+              IsBlank(dpFechaCreacion.SelectedDate) || IsBlank(ddFormResponsableCitada.Selected.Value),
+              Notify("Por favor completa los campos obligatorios", NotificationType.Warning),
+              # Aquí puedes agregar tu función Patch(Tabla1, Defaults(Tabla1), {...}) para guardar en Excel
+              Notify("Caso creado exitosamente", NotificationType.Success);
+              Navigate(scrPanelAlertamientos, ScreenTransition.Fade)
+            )
