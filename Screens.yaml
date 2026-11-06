@@ -270,4 +270,41 @@ Screens:
           Width: =Parent.Width * 0.42
           Height: =40
 
-      lblFormSop
+      lblFormSoporte:
+        Control: Label@2.5.1
+        Properties:
+          Text: ="10. Soporte (opcional)"
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.60
+          Width: =Parent.Width * 0.42
+          Height: =25
+          Color: =RGBA(41, 16, 90, 1)
+          Size: =13
+          FontWeight: =FontWeight.Bold
+
+      txtFormSoporte:
+        Control: TextCanvas@0.0.38
+        Properties:
+          Text: =""
+          HintText: ="Enlace o referencia de soporte..."
+          X: =Parent.Width * 0.52
+          Y: =Parent.Height * 0.63
+          Width: =Parent.Width * 0.42
+          Height: =40
+
+      btnEnviarCaso:
+        Control: Button@0.0.45
+        Properties:
+          Text: ="✓  Enviar Caso"
+          X: =Parent.Width * 0.35
+          Y: =Parent.Height * 0.77
+          Width: =Parent.Width * 0.30
+          Height: =Parent.Height * 0.075
+          BasePaletteColor: =RGBA(8, 117, 44, 1)
+          OnSelect: |-
+            =If(
+              IsBlank(dpFechaCreacion.SelectedDate) || IsBlank(ddFormResponsableCitada.Selected.Value),
+              Notify("Por favor completa los campos obligatorios", NotificationType.Warning),
+              Notify("Caso creado exitosamente", NotificationType.Success);
+              Navigate(scrPanelAlertamientos, ScreenTransition.Fade)
+            )
