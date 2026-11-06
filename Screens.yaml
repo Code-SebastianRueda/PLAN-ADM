@@ -1,13 +1,15 @@
-Filter(
+If(
+    !varBuscar,
     Tabla1,
-    !varBuscar || (
-        (ddAnalistaEncargadoUAC.Selected.Value = "Todos" || IsBlank(ddAnalistaEncargadoUAC.Selected.Value) || Upper(Trim(Text(AnalistaEncargadoUAC))) = Upper(Trim(ddAnalistaEncargadoUAC.Selected.Value))) &&
-        (ddSponsor.Selected.Value = "Todos" || IsBlank(ddSponsor.Selected.Value) || Upper(Trim(Text(Sponsor))) = Upper(Trim(ddSponsor.Selected.Value))) &&
-        (ddArea.Selected.Value = "Todas" || IsBlank(ddArea.Selected.Value) || Upper(Trim(Text(Area))) = Upper(Trim(ddArea.Selected.Value))) &&
-        (ddCausal.Selected.Value = "Todas" || IsBlank(ddCausal.Selected.Value) || Upper(Trim(Text(Causal))) = Upper(Trim(ddCausal.Selected.Value))) &&
-        (ddSubcausal.Selected.Value = "Todas" || IsBlank(ddSubcausal.Selected.Value) || Upper(Trim(Text(Subcausal))) = Upper(Trim(ddSubcausal.Selected.Value))) &&
-        (ddResponsable.Selected.Value = "Todos" || IsBlank(ddResponsable.Selected.Value) || Upper(Trim(Text(ResponsableOperativo))) = Upper(Trim(ddResponsable.Selected.Value))) &&
-        (ddEstado.Selected.Value = "Todos" || IsBlank(ddEstado.Selected.Value) || Upper(Trim(Text(Estado))) = Upper(Trim(ddEstado.Selected.Value))) &&
-        (ddMesFinal.Selected.Value = "Todos" || IsBlank(ddMesFinal.Selected.Value) || Upper(Trim(Text(MesFinal))) = Upper(Trim(ddMesFinal.Selected.Value)))
+    Filter(
+        Tabla1,
+        (ddAnalistaEncargadoUAC.Selected.Value = "Todos" || IsBlank(ddAnalistaEncargadoUAC.Selected.Value) || Upper(Trim(Text(ANALISTAENCARGADOUAC))) = Upper(Trim(ddAnalistaEncargadoUAC.Selected.Value))) &&
+        (ddSponsor.Selected.Value = "Todos" || IsBlank(ddSponsor.Selected.Value) || Upper(Trim(Text(SPONSOR))) = Upper(Trim(ddSponsor.Selected.Value))) &&
+        (ddArea.Selected.Value = "Todas" || IsBlank(ddArea.Selected.Value) || Upper(Trim(Text(AREA))) = Upper(Trim(ddArea.Selected.Value))) &&
+        (ddCausal.Selected.Value = "Todas" || IsBlank(ddCausal.Selected.Value) || Upper(Trim(Text(CAUSAL))) = Upper(Trim(ddCausal.Selected.Value))) &&
+        (ddSubcausal.Selected.Value = "Todas" || IsBlank(ddSubcausal.Selected.Value) || Upper(Trim(Text(SUBCAUSAL))) = Upper(Trim(ddSubcausal.Selected.Value))) &&
+        (ddResponsable.Selected.Value = "Todos" || IsBlank(ddResponsable.Selected.Value) || Upper(Trim(Text(RESPONSABLEOPERATIVO))) = Upper(Trim(ddResponsable.Selected.Value))) &&
+        (ddEstado.Selected.Value = "Todos" || IsBlank(ddEstado.Selected.Value) || Upper(Trim(Text(ESTADO))) = Upper(Trim(ddEstado.Selected.Value))) &&
+        (ddMesFinal.Selected.Value = "Todos" || IsBlank(ddMesFinal.Selected.Value) || Upper(Trim(Text(MESFINAL))) = Upper(Trim(ddMesFinal.Selected.Value)))
     )
 )
