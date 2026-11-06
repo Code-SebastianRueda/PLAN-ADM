@@ -1,11 +1,39 @@
 Filter(
-    Tabla1;
-    (ddAnalista.Selected.Value = "Todos" || IsBlank(ddAnalista.Selected.Value) || Analista = ddAnalista.Selected.Value) &&
+    Tabla1,
+    (ddAnalista.Selected.Value = "Todos" || IsBlank(ddAnalista.Selected.Value) || AnalistaAsignado = ddAnalista.Selected.Value) &&
     (ddSponsor.Selected.Value = "Todos" || IsBlank(ddSponsor.Selected.Value) || Sponsor = ddSponsor.Selected.Value) &&
-    (ddArea.Selected.Value = "Todos" || IsBlank(ddArea.Selected.Value) || Area = ddArea.Selected.Value) &&
-    (ddCausal.Selected.Value = "Todos" || IsBlank(ddCausal.Selected.Value) || Causal = ddCausal.Selected.Value) &&
-    (ddSubcausal.Selected.Value = "Todos" || IsBlank(ddSubcausal.Selected.Value) || Subcausal = ddSubcausal.Selected.Value) &&
+    (ddArea.Selected.Value = "Todas" || IsBlank(ddArea.Selected.Value) || Area = ddArea.Selected.Value) &&
+    (ddCausal.Selected.Value = "Todas" || IsBlank(ddCausal.Selected.Value) || Causal = ddCausal.Selected.Value) &&
+    (ddSubcausal.Selected.Value = "Todas" || IsBlank(ddSubcausal.Selected.Value) || Subcausal = ddSubcausal.Selected.Value) &&
     (ddResponsable.Selected.Value = "Todos" || IsBlank(ddResponsable.Selected.Value) || ResponsableOperativo = ddResponsable.Selected.Value) &&
     (ddEstado.Selected.Value = "Todos" || IsBlank(ddEstado.Selected.Value) || Estado = ddEstado.Selected.Value) &&
-    (ddMesFinal.Selected.Value = "Todos" || IsBlank(ddMesFinal.Selected.Value) || MesFinal = ddMesFinal.Selected.Value)
+    (ddMesFinal.Selected.Value = "Todos" || IsBlank(ddMesFinal.Selected.Value) || MesFinal = ddMesFinal.Selected.Value) &&
+    (
+        IsBlank(dpDesde.SelectedDate) || 
+        Date(
+            Value(Año),
+            Switch(
+                Lower(Trim(Mes)),
+                "enero", 1,
+                "febrero", 2,
+                "marzo", 3,
+                "abril", 4,
+                "mayo", 5,
+                "junio", 6,
+                "julio", 7,
+                "agosto", 8,
+                "septiembre", 9,
+                "setiembre", 9,
+                "octubre", 10,
+                "noviembre", 11,
+                "diciembre", 12,
+                1
+            ),
+            Value(Dia)
+        ) >= dpDesde.SelectedDate
+    )
 )
+
+
+
+
