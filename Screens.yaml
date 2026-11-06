@@ -2,32 +2,30 @@
 Screens:
   scrPanelAlertamientos:
     Properties:
-      Fill: =RGBA(244, 243, 252, 1)
-      LoadingSpinnerColor: =RGBA(84, 32, 168, 1)
-
+      Fill: =RGBA(244,243,252,1)
+      Width: =App.Width
+      Height: =App.Height
     Children:
 
-      # ==========================================
-      # 1. ENCABEZADO CORPORATIVO
-      # ==========================================
+      # ENCABEZADO
 
       - recHeader:
           Control: Rectangle@2.3.0
           Properties:
             X: =0
             Y: =0
-            Width: =App.Width
-            Height: =90
-            Fill: =RGBA(41, 11, 88, 1)
+            Width: =Parent.Width
+            Height: =Parent.Height*0.10
+            Fill: =RGBA(41,11,88,1)
 
       - lblLogo:
           Control: Label@2.5.1
           Properties:
             Text: ="CHUBB"
-            X: =35
-            Y: =18
-            Width: =250
-            Height: =55
+            X: =Parent.Width*0.025
+            Y: =Parent.Height*0.02
+            Width: =Parent.Width*0.18
+            Height: =Parent.Height*0.06
             Color: =Color.White
             Size: =30
             FontWeight: =FontWeight.Bold
@@ -35,11 +33,11 @@ Screens:
       - lblTitulo:
           Control: Label@2.5.1
           Properties:
-            Text: ="🔔  Panel de Alertamientos"
-            X: =340
-            Y: =20
-            Width: =480
-            Height: =50
+            Text: ="Panel de Alertamientos"
+            X: =Parent.Width*0.25
+            Y: =Parent.Height*0.02
+            Width: =Parent.Width*0.35
+            Height: =Parent.Height*0.06
             Color: =Color.White
             Size: =24
             FontWeight: =FontWeight.Bold
@@ -47,93 +45,77 @@ Screens:
       - lblNavegacion:
           Control: Label@2.5.1
           Properties:
-            Text: ="⌂   Inicio   /   Proceso de alertamiento UAC"
-            X: =850
-            Y: =20
-            Width: =450
-            Height: =50
+            Text: ="Inicio / Proceso de alertamiento UAC"
+            X: =Parent.Width*0.68
+            Y: =Parent.Height*0.025
+            Width: =Parent.Width*0.29
+            Height: =Parent.Height*0.05
             Color: =Color.White
             Size: =14
 
-      - lblUsuario:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="◉  Usuario"
-            X: =1320
-            Y: =20
-            Width: =110
-            Height: =50
-            Color: =Color.White
-            Size: =14
-
-      # ==========================================
-      # 2. PANEL DE FILTROS
-      # ==========================================
+      # PANEL DE FILTROS
 
       - recFiltros:
           Control: Rectangle@2.3.0
           Properties:
-            X: =25
-            Y: =110
-            Width: =App.Width - 50
-            Height: =235
+            X: =Parent.Width*0.02
+            Y: =Parent.Height*0.13
+            Width: =Parent.Width*0.96
+            Height: =Parent.Height*0.32
             Fill: =Color.White
-            BorderColor: =RGBA(225, 221, 240, 1)
+            BorderColor: =RGBA(225,221,240,1)
             BorderThickness: =1
 
       - lblFiltros:
           Control: Label@2.5.1
           Properties:
-            Text: ="◆  Filtros de búsqueda"
-            X: =50
-            Y: =120
-            Width: =350
+            Text: ="Filtros de búsqueda"
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.14
+            Width: =300
             Height: =35
-            Color: =RGBA(41, 16, 90, 1)
+            Color: =RGBA(41,16,90,1)
             Size: =20
             FontWeight: =FontWeight.Bold
 
       # FECHA INICIAL
 
-      - lblFechaDesde:
+      - lblFecha:
           Control: Label@2.5.1
           Properties:
             Text: ="Fecha inicial"
-            X: =60
-            Y: =160
-            Width: =150
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.19
+            Width: =180
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - dpDesde:
           Control: DatePicker@0.0.46
           Properties:
-            X: =60
-            Y: =188
-            Width: =300
-            Height: =43
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.22
+            Width: =Parent.Width*0.16
+            Height: =42
 
-      # FECHA FINAL
+      # MES FECHA FINAL
 
-      - lblFechaHasta:
+      - lblMesFinal:
           Control: Label@2.5.1
           Properties:
-            Text: ="Fecha final"
-            X: =60
-            Y: =245
-            Width: =150
+            Text: ="Mes fecha final"
+            X: =Parent.Width*0.23
+            Y: =Parent.Height*0.19
+            Width: =180
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
-      - dpHasta:
-          Control: DatePicker@0.0.46
+      - ddMesFinal:
+          Control: Dropdown@0.0.45
           Properties:
-            X: =60
-            Y: =273
-            Width: =300
-            Height: =43
+            X: =Parent.Width*0.23
+            Y: =Parent.Height*0.22
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todos","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
 
       # ANALISTA
 
@@ -141,21 +123,19 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Analista asignado"
-            X: =410
-            Y: =160
-            Width: =200
+            X: =Parent.Width*0.42
+            Y: =Parent.Height*0.19
+            Width: =180
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddAnalista:
           Control: Dropdown@0.0.45
           Properties:
-            X: =410
-            Y: =188
-            Width: =290
-            Height: =43
-            Items: =["Todos", "Analista 1", "Analista 2"]
+            X: =Parent.Width*0.42
+            Y: =Parent.Height*0.22
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todos"] & Distinct(Table1,AnalistaAsignado)
 
       # SPONSOR
 
@@ -163,21 +143,19 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Sponsor"
-            X: =735
-            Y: =160
+            X: =Parent.Width*0.61
+            Y: =Parent.Height*0.19
             Width: =150
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddSponsor:
           Control: Dropdown@0.0.45
           Properties:
-            X: =735
-            Y: =188
-            Width: =280
-            Height: =43
-            Items: =["Todos", "Sponsor A", "Sponsor B", "Sponsor C"]
+            X: =Parent.Width*0.61
+            Y: =Parent.Height*0.22
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todos"] & Distinct(Table1,Sponsor)
 
       # AREA
 
@@ -185,21 +163,19 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Área"
-            X: =1050
-            Y: =160
-            Width: =120
+            X: =Parent.Width*0.80
+            Y: =Parent.Height*0.19
+            Width: =150
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddArea:
           Control: Dropdown@0.0.45
           Properties:
-            X: =1050
-            Y: =188
-            Width: =250
-            Height: =43
-            Items: =["Todas", "UAC", "Infraestructura", "Aplicaciones"]
+            X: =Parent.Width*0.80
+            Y: =Parent.Height*0.22
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todas"] & Distinct(Table1,Area)
 
       # CAUSAL
 
@@ -207,21 +183,19 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Causal"
-            X: =410
-            Y: =245
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.29
             Width: =150
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddCausal:
           Control: Dropdown@0.0.45
           Properties:
-            X: =410
-            Y: =273
-            Width: =290
-            Height: =43
-            Items: =["Todas", "Operativo", "Técnico", "Comercial"]
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.32
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todas"] & Distinct(Table1,Causal)
 
       # SUBCAUSAL
 
@@ -229,43 +203,39 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Subcausal"
-            X: =735
-            Y: =245
-            Width: =200
+            X: =Parent.Width*0.23
+            Y: =Parent.Height*0.29
+            Width: =180
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddSubcausal:
           Control: Dropdown@0.0.45
           Properties:
-            X: =735
-            Y: =273
-            Width: =280
-            Height: =43
-            Items: =["Todas", "Proceso", "Sistema", "Servicio", "Cliente"]
+            X: =Parent.Width*0.23
+            Y: =Parent.Height*0.32
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todas"] & Distinct(Table1,Subcausal)
 
-      # RESPONSABLE OPERATIVO
+      # RESPONSABLE
 
       - lblResponsable:
           Control: Label@2.5.1
           Properties:
             Text: ="Responsable operativo"
-            X: =1050
-            Y: =245
-            Width: =250
+            X: =Parent.Width*0.42
+            Y: =Parent.Height*0.29
+            Width: =180
             Height: =25
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =14
 
       - ddResponsable:
           Control: Dropdown@0.0.45
           Properties:
-            X: =1050
-            Y: =273
-            Width: =250
-            Height: =43
-            Items: =["Todos", "Responsable 1", "Responsable 2"]
+            X: =Parent.Width*0.42
+            Y: =Parent.Height*0.32
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todos"] & Distinct(Table1,ResponsableOperativo)
 
       # ESTADO
 
@@ -273,501 +243,401 @@ Screens:
           Control: Label@2.5.1
           Properties:
             Text: ="Estado"
-            X: =735
-            Y: =320
-            Width: =120
+            X: =Parent.Width*0.61
+            Y: =Parent.Height*0.29
+            Width: =150
             Height: =25
-            Visible: =false
-            Color: =RGBA(41, 16, 90, 1)
 
       - ddEstado:
           Control: Dropdown@0.0.45
           Properties:
-            X: =1050
-            Y: =320
-            Width: =250
-            Height: =1
-            Visible: =false
-            Items: =["Todos", "Pendiente", "En proceso", "Resuelto", "En espera"]
+            X: =Parent.Width*0.61
+            Y: =Parent.Height*0.32
+            Width: =Parent.Width*0.16
+            Height: =42
+            Items: =["Todos"] & Distinct(Table1,Estado)
 
-      # ESTADO VISIBLE EN LA SEGUNDA FILA
-      # Se utiliza el control de estado en la posición
-      # del filtro de responsable cuando sea necesario.
-
-      # BUSCAR
+      # BOTONES
 
       - btnBuscar:
           Control: Button@0.0.45
           Properties:
             Text: ="Buscar"
-            X: =1315
-            Y: =260
-            Width: =120
-            Height: =45
-            BasePaletteColor: =RGBA(84, 32, 168, 1)
-            OnSelect: |-
-              =Set(varPagina, 1);
-              Set(varAplicarFiltros, true)
-
-      # LIMPIAR
+            X: =Parent.Width*0.80
+            Y: =Parent.Height*0.31
+            Width: =Parent.Width*0.075
+            Height: =42
+            BasePaletteColor: =RGBA(84,32,168,1)
+            OnSelect: =Set(varAplicarFiltros,true); Set(varPagina,1)
 
       - btnLimpiar:
           Control: Button@0.0.45
           Properties:
-            Text: ="Limpiar filtros"
-            X: =1315
-            Y: =195
-            Width: =120
-            Height: =45
-            OnSelect: |-
-              =Reset(ddAnalista);
-              Reset(ddSponsor);
-              Reset(ddArea);
-              Reset(ddCausal);
-              Reset(ddSubcausal);
-              Reset(ddResponsable);
-              Reset(ddEstado);
-              Reset(dpDesde);
-              Reset(dpHasta);
-              Set(varAplicarFiltros, false);
-              Set(varPagina, 1)
+            Text: ="Limpiar"
+            X: =Parent.Width*0.885
+            Y: =Parent.Height*0.31
+            Width: =Parent.Width*0.075
+            Height: =42
+            OnSelect: =Reset(dpDesde); Reset(ddMesFinal); Reset(ddAnalista); Reset(ddSponsor); Reset(ddArea); Reset(ddCausal); Reset(ddSubcausal); Reset(ddResponsable); Reset(ddEstado); Set(varAplicarFiltros,false); Set(varPagina,1)
 
-      # ==========================================
-      # 3. ACCIONES PRINCIPALES
-      # ==========================================
+      # ACCIONES
 
       - recCrear:
           Control: Rectangle@2.3.0
           Properties:
-            X: =25
-            Y: =365
-            Width: =(App.Width - 75) / 2
-            Height: =105
-            Fill: =RGBA(231, 248, 239, 1)
-            BorderColor: =RGBA(129, 214, 166, 1)
-            BorderThickness: =1
+            X: =Parent.Width*0.02
+            Y: =Parent.Height*0.48
+            Width: =Parent.Width*0.47
+            Height: =Parent.Height*0.09
+            Fill: =RGBA(231,248,239,1)
+            BorderColor: =RGBA(129,214,166,1)
 
       - btnCrearCaso:
           Control: Button@0.0.45
           Properties:
-            Text: ="＋  Crear Caso"
-            X: =55
-            Y: =385
-            Width: =300
-            Height: =65
-            BasePaletteColor: =RGBA(8, 117, 44, 1)
-            OnSelect: |-
-              =Set(varModoFormulario, "Nuevo");
-              Set(varCasoSeleccionado, Blank());
-              Notify("Preparado para crear un nuevo caso", NotificationType.Information)
+            Text: ="＋ Crear Caso"
+            X: =Parent.Width*0.03
+            Y: =Parent.Height*0.495
+            Width: =Parent.Width*0.20
+            Height: =Parent.Height*0.06
+            BasePaletteColor: =RGBA(8,117,44,1)
+            OnSelect: =Set(varModoFormulario,"Nuevo"); Set(varCasoSeleccionado,Blank()); Notify("Nuevo caso",NotificationType.Information)
 
       - recSolucionar:
           Control: Rectangle@2.3.0
           Properties:
-            X: =(App.Width / 2) + 12
-            Y: =365
-            Width: =(App.Width - 75) / 2
-            Height: =105
-            Fill: =RGBA(231, 240, 255, 1)
-            BorderColor: =RGBA(140, 183, 245, 1)
-            BorderThickness: =1
+            X: =Parent.Width*0.51
+            Y: =Parent.Height*0.48
+            Width: =Parent.Width*0.47
+            Height: =Parent.Height*0.09
+            Fill: =RGBA(231,240,255,1)
+            BorderColor: =RGBA(140,183,245,1)
 
       - btnSolucionar:
           Control: Button@0.0.45
           Properties:
-            Text: ="✓  Solucionar Caso"
-            X: =(App.Width / 2) + 40
-            Y: =385
-            Width: =330
-            Height: =65
-            BasePaletteColor: =RGBA(7, 85, 166, 1)
-            OnSelect: |-
-              =If(
-                IsBlank(varCasoSeleccionado),
-                Notify("Selecciona primero un caso", NotificationType.Warning),
-                Set(varModoFormulario, "Solucionar");
-                Notify("Caso seleccionado para solucionar", NotificationType.Information)
-              )
+            Text: ="✓ Solucionar Caso"
+            X: =Parent.Width*0.53
+            Y: =Parent.Height*0.495
+            Width: =Parent.Width*0.20
+            Height: =Parent.Height*0.06
+            BasePaletteColor: =RGBA(7,85,166,1)
+            OnSelect: =If(IsBlank(varCasoSeleccionado),Notify("Selecciona un caso",NotificationType.Warning),Set(varModoFormulario,"Solucionar"))
 
-      # ==========================================
-      # 4. PANEL DE CASOS
-      # ==========================================
+      # TABLA
 
       - recTabla:
           Control: Rectangle@2.3.0
           Properties:
-            X: =25
-            Y: =490
-            Width: =App.Width - 50
-            Height: =385
+            X: =Parent.Width*0.02
+            Y: =Parent.Height*0.60
+            Width: =Parent.Width*0.96
+            Height: =Parent.Height*0.37
             Fill: =Color.White
-            BorderColor: =RGBA(225, 221, 240, 1)
-            BorderThickness: =1
+            BorderColor: =RGBA(225,221,240,1)
 
       - lblTituloTabla:
           Control: Label@2.5.1
           Properties:
-            Text: ="☷  Casos de Alertamientos"
-            X: =50
-            Y: =500
-            Width: =450
+            Text: ="Casos de Alertamientos"
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.61
+            Width: =400
             Height: =40
-            Color: =RGBA(41, 16, 90, 1)
-            Size: =21
+            Size: =20
+            Color: =RGBA(41,16,90,1)
             FontWeight: =FontWeight.Bold
-
-      - lblSubtituloTabla:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="Listado de registros"
-            X: =75
-            Y: =535
-            Width: =250
-            Height: =25
-            Color: =RGBA(7, 85, 166, 1)
-            Size: =12
 
       - lblTotal:
           Control: Label@2.5.1
           Properties:
-            Text: '="Total: " & CountRows(galAlertamientos.AllItems) & " registros visibles"'
-            X: =1170
-            Y: =505
-            Width: =270
+            Text: '="Total de registros: " & CountRows(galAlertamientos.AllItems)'
+            X: =Parent.Width*0.78
+            Y: =Parent.Height*0.615
+            Width: =Parent.Width*0.18
             Height: =35
-            Color: =RGBA(84, 32, 168, 1)
+            Color: =RGBA(84,32,168,1)
             Size: =14
-            FontWeight: =FontWeight.Bold
 
-      # ==========================================
-      # 5. ENCABEZADOS DE TABLA
-      # ==========================================
+      # ENCABEZADOS TABLA
 
       - recHeaderTabla:
           Control: Rectangle@2.3.0
           Properties:
-            X: =45
-            Y: =570
-            Width: =App.Width - 90
-            Height: =40
-            Fill: =RGBA(41, 11, 88, 1)
+            X: =Parent.Width*0.035
+            Y: =Parent.Height*0.67
+            Width: =Parent.Width*0.93
+            Height: =Parent.Height*0.05
+            Fill: =RGBA(41,11,88,1)
 
       - lblColCaso:
           Control: Label@2.5.1
           Properties:
-            Text: ="Caso"
-            X: =55
-            Y: =573
-            Width: =130
-            Height: =35
+            Text: ="Día / Mes / Año"
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.12
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
-      - lblColAsignado:
+      - lblColAnalista:
           Control: Label@2.5.1
           Properties:
-            Text: ="Asignado"
-            X: =190
-            Y: =573
-            Width: =180
-            Height: =35
+            Text: ="Analista"
+            X: =Parent.Width*0.17
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.12
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
       - lblColSponsor:
           Control: Label@2.5.1
           Properties:
             Text: ="Sponsor"
-            X: =375
-            Y: =573
-            Width: =150
-            Height: =35
+            X: =Parent.Width*0.30
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.10
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
       - lblColArea:
           Control: Label@2.5.1
           Properties:
             Text: ="Área"
-            X: =545
-            Y: =573
-            Width: =90
-            Height: =35
+            X: =Parent.Width*0.41
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.08
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
       - lblColCausal:
           Control: Label@2.5.1
           Properties:
             Text: ="Causal"
-            X: =655
-            Y: =573
-            Width: =130
-            Height: =35
+            X: =Parent.Width*0.50
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.09
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
       - lblColSubcausal:
           Control: Label@2.5.1
           Properties:
             Text: ="Subcausal"
-            X: =800
-            Y: =573
-            Width: =150
-            Height: =35
+            X: =Parent.Width*0.60
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.10
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
+
+      - lblColResponsable:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Responsable"
+            X: =Parent.Width*0.71
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.11
+            Height: =30
+            Color: =Color.White
+            Size: =12
 
       - lblColEstado:
           Control: Label@2.5.1
           Properties:
             Text: ="Estado"
-            X: =970
-            Y: =573
-            Width: =150
-            Height: =35
+            X: =Parent.Width*0.83
+            Y: =Parent.Height*0.675
+            Width: =Parent.Width*0.08
+            Height: =30
             Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
+            Size: =12
 
-      - lblColFecha:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="Fecha creación"
-            X: =1135
-            Y: =573
-            Width: =160
-            Height: =35
-            Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
-
-      - lblColAcciones:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="Acciones"
-            X: =1320
-            Y: =573
-            Width: =110
-            Height: =35
-            Color: =Color.White
-            Size: =13
-            FontWeight: =FontWeight.Bold
-
-      # ==========================================
-      # 6. GALERÍA DE ALERTAMIENTOS
-      # ==========================================
+      # GALERÍA CON DATOS REALES
 
       - galAlertamientos:
           Control: Gallery@2.15.0
           Variant: Vertical
           Properties:
-            X: =45
-            Y: =610
-            Width: =App.Width - 90
-            Height: =215
-            TemplateSize: =43
+            X: =Parent.Width*0.035
+            Y: =Parent.Height*0.72
+            Width: =Parent.Width*0.93
+            Height: =Parent.Height*0.22
+            TemplateSize: =45
             TemplatePadding: =1
             Items: |-
               =With(
                 {
-                  datos: Table(
-                    {Caso:"001-2026",Asignado:"Juan Pérez",Sponsor:"Sponsor A",Area:"UAC",Causal:"Operativo",Subcausal:"Proceso",Estado:"Pendiente",FechaCreacion:Date(2026,10,16)},
-                    {Caso:"002-2026",Asignado:"María López",Sponsor:"Sponsor B",Area:"UAC",Causal:"Técnico",Subcausal:"Sistema",Estado:"Resuelto",FechaCreacion:Date(2026,10,15)},
-                    {Caso:"003-2026",Asignado:"Carlos Rodríguez",Sponsor:"Sponsor A",Area:"UAC",Causal:"Operativo",Subcausal:"Servicio",Estado:"En proceso",FechaCreacion:Date(2026,10,14)},
-                    {Caso:"004-2026",Asignado:"Ana Martínez",Sponsor:"Sponsor C",Area:"UAC",Causal:"Comercial",Subcausal:"Cliente",Estado:"En espera",FechaCreacion:Date(2026,10,13)},
-                    {Caso:"005-2026",Asignado:"Diego Castro",Sponsor:"Sponsor A",Area:"UAC",Causal:"Técnico",Subcausal:"Infraestructura",Estado:"Resuelto",FechaCreacion:Date(2026,10,12)}
+                  datos: AddColumns(
+                    Table1 As fila,
+                    FechaConstruida,
+                    IfError(
+                      Date(
+                        Value(fila.Año),
+                        Switch(
+                          Lower(Trim(fila.Mes)),
+                          "enero",1,
+                          "febrero",2,
+                          "marzo",3,
+                          "abril",4,
+                          "mayo",5,
+                          "junio",6,
+                          "julio",7,
+                          "agosto",8,
+                          "septiembre",9,
+                          "setiembre",9,
+                          "octubre",10,
+                          "noviembre",11,
+                          "diciembre",12,
+                          1
+                        ),
+                        Value(fila.Dia)
+                      ),
+                      Blank()
+                    )
                   )
                 },
                 Filter(
                   datos,
-                  !varAplicarFiltros || ddAnalista.Selected.Value = "Todos" || Asignado = ddAnalista.Selected.Value,
-                  !varAplicarFiltros || ddSponsor.Selected.Value = "Todos" || Sponsor = ddSponsor.Selected.Value,
-                  !varAplicarFiltros || ddArea.Selected.Value = "Todas" || Area = ddArea.Selected.Value,
-                  !varAplicarFiltros || ddCausal.Selected.Value = "Todas" || Causal = ddCausal.Selected.Value,
-                  !varAplicarFiltros || ddSubcausal.Selected.Value = "Todas" || Subcausal = ddSubcausal.Selected.Value,
-                  !varAplicarFiltros || ddEstado.Selected.Value = "Todos" || Estado = ddEstado.Selected.Value,
-                  !varAplicarFiltros || IsBlank(dpDesde.SelectedDate) || FechaCreacion >= dpDesde.SelectedDate,
-                  !varAplicarFiltros || IsBlank(dpHasta.SelectedDate) || FechaCreacion < DateAdd(dpHasta.SelectedDate, 1, TimeUnit.Days)
+                  !varAplicarFiltros ||
+                  IsBlank(ddAnalista.Selected.Value) ||
+                  ddAnalista.Selected.Value="Todos" ||
+                  AnalistaAsignado=ddAnalista.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddSponsor.Selected.Value="Todos" ||
+                  Sponsor=ddSponsor.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddArea.Selected.Value="Todas" ||
+                  Area=ddArea.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddCausal.Selected.Value="Todas" ||
+                  Causal=ddCausal.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddSubcausal.Selected.Value="Todas" ||
+                  Subcausal=ddSubcausal.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddResponsable.Selected.Value="Todos" ||
+                  ResponsableOperativo=ddResponsable.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddEstado.Selected.Value="Todos" ||
+                  Estado=ddEstado.Selected.Value,
+                  !varAplicarFiltros ||
+                  ddMesFinal.Selected.Value="Todos" ||
+                  MesFinal=ddMesFinal.Selected.Value,
+                  !varAplicarFiltros ||
+                  IsBlank(dpDesde.SelectedDate) ||
+                  FechaConstruida>=dpDesde.SelectedDate
                 )
               )
 
           Children:
 
-            - lblCaso:
+            - lblFechaFila:
                 Control: Label@2.5.1
                 Properties:
-                  Text: =ThisItem.Caso
+                  Text: =ThisItem.Dia & "/" & ThisItem.Mes & "/" & ThisItem.Año
                   X: =10
-                  Y: =4
-                  Width: =125
+                  Y: =5
+                  Width: =Parent.Width*0.13
                   Height: =35
-                  Size: =12
-                  Color: =RGBA(33, 19, 68, 1)
+                  Size: =11
 
-            - lblAsignado:
+            - lblAnalistaFila:
                 Control: Label@2.5.1
                 Properties:
-                  Text: =ThisItem.Asignado
-                  X: =145
-                  Y: =4
-                  Width: =170
+                  Text: =ThisItem.AnalistaAsignado
+                  X: =Parent.Width*0.145
+                  Y: =5
+                  Width: =Parent.Width*0.12
                   Height: =35
-                  Size: =12
+                  Size: =11
 
             - lblSponsorFila:
                 Control: Label@2.5.1
                 Properties:
                   Text: =ThisItem.Sponsor
-                  X: =330
-                  Y: =4
-                  Width: =150
+                  X: =Parent.Width*0.285
+                  Y: =5
+                  Width: =Parent.Width*0.10
                   Height: =35
-                  Size: =12
+                  Size: =11
 
             - lblAreaFila:
                 Control: Label@2.5.1
                 Properties:
                   Text: =ThisItem.Area
-                  X: =500
-                  Y: =4
-                  Width: =90
+                  X: =Parent.Width*0.405
+                  Y: =5
+                  Width: =Parent.Width*0.08
                   Height: =35
-                  Size: =12
+                  Size: =11
 
             - lblCausalFila:
                 Control: Label@2.5.1
                 Properties:
                   Text: =ThisItem.Causal
-                  X: =610
-                  Y: =4
-                  Width: =130
+                  X: =Parent.Width*0.50
+                  Y: =5
+                  Width: =Parent.Width*0.09
                   Height: =35
-                  Size: =12
+                  Size: =11
 
             - lblSubcausalFila:
                 Control: Label@2.5.1
                 Properties:
                   Text: =ThisItem.Subcausal
-                  X: =755
-                  Y: =4
-                  Width: =150
+                  X: =Parent.Width*0.60
+                  Y: =5
+                  Width: =Parent.Width*0.10
                   Height: =35
-                  Size: =12
+                  Size: =11
+
+            - lblResponsableFila:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.ResponsableOperativo
+                  X: =Parent.Width*0.71
+                  Y: =5
+                  Width: =Parent.Width*0.11
+                  Height: =35
+                  Size: =11
 
             - lblEstadoFila:
                 Control: Label@2.5.1
                 Properties:
                   Text: =ThisItem.Estado
-                  X: =925
-                  Y: =4
-                  Width: =150
+                  X: =Parent.Width*0.83
+                  Y: =5
+                  Width: =Parent.Width*0.09
                   Height: =35
-                  Size: =12
+                  Size: =11
                   FontWeight: =FontWeight.Bold
-                  Fill: |-
-                    =Switch(
-                      ThisItem.Estado,
-                      "Pendiente", RGBA(255,240,194,1),
-                      "Resuelto", RGBA(216,245,223,1),
-                      "En proceso", RGBA(217,234,254,1),
-                      "En espera", RGBA(232,232,237,1),
-                      RGBA(238,238,238,1)
-                    )
-                  Color: |-
-                    =Switch(
-                      ThisItem.Estado,
-                      "Pendiente", RGBA(166,91,0,1),
-                      "Resuelto", RGBA(8,117,44,1),
-                      "En proceso", RGBA(7,85,166,1),
-                      "En espera", RGBA(85,85,85,1),
-                      Color.Black
-                    )
-
-            - lblFechaFila:
-                Control: Label@2.5.1
-                Properties:
-                  Text: =Text(ThisItem.FechaCreacion,"dd/mm/yyyy")
-                  X: =1090
-                  Y: =4
-                  Width: =160
-                  Height: =35
-                  Size: =12
+                  Color: =Switch(ThisItem.Estado,"Pendiente",RGBA(166,91,0,1),"Resuelto",RGBA(8,117,44,1),"En proceso",RGBA(7,85,166,1),RGBA(85,85,85,1))
 
             - btnVer:
                 Control: Button@0.0.45
                 Properties:
-                  Text: ="◉"
-                  X: =1275
-                  Y: =4
-                  Width: =40
+                  Text: ="Ver"
+                  X: =Parent.Width*0.93
+                  Y: =5
+                  Width: =45
                   Height: =32
-                  OnSelect: |-
-                    =Set(varCasoSeleccionado, ThisItem);
-                    Notify("Caso seleccionado: " & ThisItem.Caso, NotificationType.Information)
+                  OnSelect: =Set(varCasoSeleccionado,ThisItem)
 
-            - btnEditar:
-                Control: Button@0.0.45
-                Properties:
-                  Text: ="✎"
-                  X: =1320
-                  Y: =4
-                  Width: =40
-                  Height: =32
-                  OnSelect: |-
-                    =Set(varCasoSeleccionado, ThisItem);
-                    Set(varModoFormulario, "Editar");
-                    Notify("Caso seleccionado para edición", NotificationType.Information)
-
-      # ==========================================
-      # 7. PAGINACIÓN
-      # ==========================================
-
-      - btnAnterior:
-          Control: Button@0.0.45
-          Properties:
-            Text: ="❮"
-            X: =50
-            Y: =830
-            Width: =45
-            Height: =35
-            OnSelect: =Set(varPagina, Max(1, varPagina - 1))
+      # PIE DE PANTALLA
 
       - lblPagina:
           Control: Label@2.5.1
           Properties:
-            Text: '="Página " & varPagina'
-            X: =105
-            Y: =830
-            Width: =110
-            Height: =35
-            Color: =RGBA(84, 32, 168, 1)
-            Size: =13
-            FontWeight: =FontWeight.Bold
-
-      - btnSiguiente:
-          Control: Button@0.0.45
-          Properties:
-            Text: ="❯"
-            X: =220
-            Y: =830
-            Width: =45
-            Height: =35
-            OnSelect: =Set(varPagina, varPagina + 1)
-
-      - lblRegistros:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="Listado de casos de alertamiento"
-            X: =1100
-            Y: =830
-            Width: =330
-            Height: =35
-            Color: =RGBA(41, 16, 90, 1)
+            Text: ="Panel de gestión de alertamientos"
+            X: =Parent.Width*0.04
+            Y: =Parent.Height*0.95
+            Width: =400
+            Height: =30
+            Color: =RGBA(84,32,168,1)
             Size: =12
