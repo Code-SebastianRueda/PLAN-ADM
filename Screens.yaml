@@ -263,8 +263,8 @@ Screens:
       - txtFormProblematica:
           Control: Text@0.0.38
           Properties:
-            Default: =""
-            HintText: ="Describa brevemente la problemática..."
+            Text: =""
+            InputTextPlaceholder: ="Describa brevemente la problemática..."
             X: =710
             Y: =470
             Width: =620
@@ -285,8 +285,8 @@ Screens:
       - txtFormSoporte:
           Control: Text@0.0.38
           Properties:
-            Default: =""
-            HintText: ="Enlace o referencia de soporte..."
+            Text: =""
+            InputTextPlaceholder: ="Enlace o referencia de soporte..."
             X: =710
             Y: =560
             Width: =620
