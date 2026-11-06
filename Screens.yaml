@@ -5,9 +5,6 @@ Screens:
       LoadingSpinnerColor: =RGBA(84, 32, 168, 1)
     Children:
 
-      # ==========================================
-      # 1. ENCABEZADO CORPORATIVO
-      # ==========================================
       recHeaderCrear:
         Control: Rectangle@2.3.0
         Properties:
@@ -52,10 +49,6 @@ Screens:
           BasePaletteColor: =RGBA(84, 32, 168, 1)
           OnSelect: =Navigate(scrPanelAlertamientos, ScreenTransition.Fade)
 
-
-      # ==========================================
-      # 2. CONTENEDOR PRINCIPAL DE FORMULARIO
-      # ==========================================
       recFormulario:
         Control: Rectangle@2.3.0
         Properties:
@@ -79,10 +72,6 @@ Screens:
           Size: =13
           FontWeight: =FontWeight.Bold
 
-
-      # --- COLUMNA IZQUIERDA DE CAMPOS ---
-
-      # 1. Fecha Inicial del Alertamiento
       lblFormFecha:
         Control: Label@2.5.1
         Properties:
@@ -103,7 +92,6 @@ Screens:
           Width: =Parent.Width * 0.42
           Height: =40
 
-      # 2. Asigne el responsable de la citada
       lblFormResponsableCitada:
         Control: Label@2.5.1
         Properties:
@@ -125,7 +113,6 @@ Screens:
           Height: =40
           Items: =["Seleccione...", "Persona 1", "Persona 2"]
 
-      # 3. Sponsor / Área encargada
       lblFormSponsorArea:
         Control: Label@2.5.1
         Properties:
@@ -156,7 +143,6 @@ Screens:
           Height: =40
           Items: =["Área...", "UAC", "Infraestructura", "Aplicaciones"]
 
-      # 4. Ingrese el área encargada
       lblFormAreaEncargada:
         Control: Label@2.5.1
         Properties:
@@ -178,7 +164,6 @@ Screens:
           Height: =40
           Items: =["Seleccione área...", "UAC", "Área Técnica", "Área Operativa"]
 
-      # 5. Asigne el responsable de la ejecución
       lblFormResponsableEjecucion:
         Control: Label@2.5.1
         Properties:
@@ -200,10 +185,6 @@ Screens:
           Height: =40
           Items: =["Seleccione responsable...", "Responsable 1", "Responsable 2"]
 
-
-      # --- COLUMNA DERECHA DE CAMPOS ---
-
-      # 6. Tipo de alertamiento
       lblFormTipoAlertamiento:
         Control: Label@2.5.1
         Properties:
@@ -225,7 +206,6 @@ Screens:
           Height: =40
           Items: =["Seleccione tipo...", "Operativo", "Técnico", "Comercial"]
 
-      # 7. Seleccione el método
       lblFormMetodo:
         Control: Label@2.5.1
         Properties:
@@ -247,7 +227,6 @@ Screens:
           Height: =40
           Items: =["Seleccione método...", "Método A", "Método B"]
 
-      # 8. Seleccione el submotivo
       lblFormSubmotivo:
         Control: Label@2.5.1
         Properties:
@@ -269,7 +248,6 @@ Screens:
           Height: =40
           Items: =["Seleccione submotivo...", "Proceso", "Sistema", "Servicio", "Cliente"]
 
-      # 9. Escriba la problemática
       lblFormProblematica:
         Control: Label@2.5.1
         Properties:
@@ -292,47 +270,4 @@ Screens:
           Width: =Parent.Width * 0.42
           Height: =40
 
-      # 10. Soporte (opcional)
-      lblFormSoporte:
-        Control: Label@2.5.1
-        Properties:
-          Text: ="10. Soporte (opcional)"
-          X: =Parent.Width * 0.52
-          Y: =Parent.Height * 0.60
-          Width: =Parent.Width * 0.42
-          Height: =25
-          Color: =RGBA(41, 16, 90, 1)
-          Size: =13
-          FontWeight: =FontWeight.Bold
-
-      txtFormSoporte:
-        Control: TextCanvas@0.0.38
-        Properties:
-          Text: =""
-          HintText: ="Enlace o referencia de soporte..."
-          X: =Parent.Width * 0.52
-          Y: =Parent.Height * 0.63
-          Width: =Parent.Width * 0.42
-          Height: =40
-
-
-      # ==========================================
-      # 3. BOTÓN DE ENVÍO FINAL
-      # ==========================================
-      btnEnviarCaso:
-        Control: Button@0.0.45
-        Properties:
-          Text: ="✓  Enviar Caso"
-          X: =Parent.Width * 0.35
-          Y: =Parent.Height * 0.77
-          Width: =Parent.Width * 0.30
-          Height: =Parent.Height * 0.075
-          BasePaletteColor: =RGBA(8, 117, 44, 1)
-          OnSelect: |-
-            =If(
-              IsBlank(dpFechaCreacion.SelectedDate) || IsBlank(ddFormResponsableCitada.Selected.Value),
-              Notify("Por favor completa los campos obligatorios", NotificationType.Warning),
-              # Aquí puedes agregar tu función Patch(Tabla1, Defaults(Tabla1), {...}) para guardar en Excel
-              Notify("Caso creado exitosamente", NotificationType.Success);
-              Navigate(scrPanelAlertamientos, ScreenTransition.Fade)
-            )
+      lblFormSop
