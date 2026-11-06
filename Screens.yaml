@@ -60,24 +60,12 @@ Screens:
             BorderColor: =RGBA(225, 221, 240, 1)
             BorderThickness: =1
 
-      - lblSubtituloForm:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="* Todos los campos son obligatorios"
-            X: =50
-            Y: =125
-            Width: =400
-            Height: =30
-            Color: =RGBA(166, 91, 0, 1)
-            Size: =13
-            FontWeight: =FontWeight.Bold
-
       - lblFormFecha:
           Control: Label@2.5.1
           Properties:
             Text: ="1. Agregue fecha inicial del alertamiento"
             X: =50
-            Y: =170
+            Y: =140
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -88,7 +76,7 @@ Screens:
           Control: DatePicker@0.0.46
           Properties:
             X: =50
-            Y: =200
+            Y: =170
             Width: =620
             Height: =42
 
@@ -97,7 +85,7 @@ Screens:
           Properties:
             Text: ="2. Asigne el responsable de la citada"
             X: =50
-            Y: =260
+            Y: =230
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -108,7 +96,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =50
-            Y: =290
+            Y: =260
             Width: =620
             Height: =42
             Items: =["Seleccione...", "Persona 1", "Persona 2"]
@@ -118,7 +106,7 @@ Screens:
           Properties:
             Text: ="3. Sponsor / Área encargada"
             X: =50
-            Y: =350
+            Y: =320
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -129,7 +117,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =50
-            Y: =380
+            Y: =350
             Width: =300
             Height: =42
             Items: =["Sponsor...", "Sponsor A", "Sponsor B", "Sponsor C"]
@@ -138,7 +126,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =370
-            Y: =380
+            Y: =350
             Width: =300
             Height: =42
             Items: =["Área...", "UAC", "Infraestructura", "Aplicaciones"]
@@ -148,7 +136,7 @@ Screens:
           Properties:
             Text: ="4. Ingrese el área encargada"
             X: =50
-            Y: =440
+            Y: =410
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -159,7 +147,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =50
-            Y: =470
+            Y: =440
             Width: =620
             Height: =42
             Items: =["Seleccione área...", "UAC", "Área Técnica", "Área Operativa"]
@@ -169,7 +157,7 @@ Screens:
           Properties:
             Text: ="5. Asigne el responsable de la ejecución"
             X: =50
-            Y: =530
+            Y: =500
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -180,7 +168,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =50
-            Y: =560
+            Y: =530
             Width: =620
             Height: =42
             Items: =["Seleccione responsable...", "Responsable 1", "Responsable 2"]
@@ -190,7 +178,7 @@ Screens:
           Properties:
             Text: ="6. Tipo de alertamiento"
             X: =710
-            Y: =170
+            Y: =140
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -201,7 +189,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =710
-            Y: =200
+            Y: =170
             Width: =620
             Height: =42
             Items: =["Seleccione tipo...", "Operativo", "Técnico", "Comercial"]
@@ -211,7 +199,7 @@ Screens:
           Properties:
             Text: ="7. Seleccione el método"
             X: =710
-            Y: =260
+            Y: =230
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -222,7 +210,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =710
-            Y: =290
+            Y: =260
             Width: =620
             Height: =42
             Items: =["Seleccione método...", "Método A", "Método B"]
@@ -232,7 +220,7 @@ Screens:
           Properties:
             Text: ="8. Seleccione el submotivo"
             X: =710
-            Y: =350
+            Y: =320
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -243,7 +231,7 @@ Screens:
           Control: Dropdown@0.0.45
           Properties:
             X: =710
-            Y: =380
+            Y: =350
             Width: =620
             Height: =42
             Items: =["Seleccione submotivo...", "Proceso", "Sistema", "Servicio", "Cliente"]
@@ -253,7 +241,7 @@ Screens:
           Properties:
             Text: ="9. Escriba la problemática"
             X: =710
-            Y: =440
+            Y: =410
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -264,9 +252,8 @@ Screens:
           Control: Text@0.0.38
           Properties:
             Text: =""
-            InputTextPlaceholder: ="Describa brevemente la problemática..."
             X: =710
-            Y: =470
+            Y: =440
             Width: =620
             Height: =42
 
@@ -275,7 +262,7 @@ Screens:
           Properties:
             Text: ="10. Soporte (opcional)"
             X: =710
-            Y: =530
+            Y: =500
             Width: =600
             Height: =25
             Color: =RGBA(41, 16, 90, 1)
@@ -286,9 +273,8 @@ Screens:
           Control: Text@0.0.38
           Properties:
             Text: =""
-            InputTextPlaceholder: ="Enlace o referencia de soporte..."
             X: =710
-            Y: =560
+            Y: =530
             Width: =620
             Height: =42
 
