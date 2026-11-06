@@ -72,7 +72,6 @@ Screens:
             Size: =13
             FontWeight: =FontWeight.Bold
 
-      # Columna Izquierda (Campos 1 al 5)
       - lblFormFecha:
           Control: Label@2.5.1
           Properties:
@@ -186,7 +185,6 @@ Screens:
             Height: =42
             Items: =["Seleccione responsable...", "Responsable 1", "Responsable 2"]
 
-      # Columna Derecha (Campos 6 al 10)
       - lblFormTipoAlertamiento:
           Control: Label@2.5.1
           Properties:
@@ -263,9 +261,9 @@ Screens:
             FontWeight: =FontWeight.Bold
 
       - txtFormProblematica:
-          Control: TextCanvas@0.0.38
+          Control: Text@0.0.38
           Properties:
-            Text: =""
+            Default: =""
             HintText: ="Describa brevemente la problemática..."
             X: =710
             Y: =470
@@ -285,9 +283,9 @@ Screens:
             FontWeight: =FontWeight.Bold
 
       - txtFormSoporte:
-          Control: TextCanvas@0.0.38
+          Control: Text@0.0.38
           Properties:
-            Text: =""
+            Default: =""
             HintText: ="Enlace o referencia de soporte..."
             X: =710
             Y: =560
