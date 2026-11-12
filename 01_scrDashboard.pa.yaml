@@ -9,11 +9,11 @@ Screens:
             AddColumns(
                 AddColumns(
                     TablaCasos,
-                    "IdNum", IfError(Value('ID CASO'), Blank()),
-                    "MesNum", If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
-                    "MesCierreNum", If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
+                    IdNum, IfError(Value('ID CASO'), Blank()),
+                    MesNum, If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
+                    MesCierreNum, If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
                 ),
-                "Fecha", IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
+                Fecha, IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
             )
         )
     Children:
@@ -301,11 +301,11 @@ Screens:
                   AddColumns(
                       AddColumns(
                           TablaCasos,
-                          "IdNum", IfError(Value('ID CASO'), Blank()),
-                          "MesNum", If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
-                          "MesCierreNum", If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
+                          IdNum, IfError(Value('ID CASO'), Blank()),
+                          MesNum, If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
+                          MesCierreNum, If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
                       ),
-                      "Fecha", IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
+                      Fecha, IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
                   )
               );
               Notify("Datos actualizados (" & CountRows(colCasos) & " casos)", NotificationType.Success, 2000)
@@ -632,10 +632,10 @@ Screens:
           Properties:
             Items: |-
               =With(
-                  {g: AddColumns(GroupBy(AddColumns(galCasos.AllItems, "EstadoU", Upper(ESTADO)), "EstadoU", "Grupo"), "Cant", CountRows(Grupo))},
+                  {g: AddColumns(GroupBy(AddColumns(galCasos.AllItems, EstadoU, Upper(ESTADO)), EstadoU, Grupo), Cant, CountRows(Grupo))},
                   With(
                       {m: Max(g, Cant)},
-                      AddColumns(Sort(g, Cant, SortOrder.Descending), "Pct", IfError(Cant / m, 0))
+                      AddColumns(Sort(g, Cant, SortOrder.Descending), Pct, IfError(Cant / m, 0))
                   )
               )
             TemplateSize: =28
@@ -710,16 +710,16 @@ Screens:
                   {
                       g: AddColumns(
                           GroupBy(
-                              AddColumns(Filter(galCasos.AllItems, !IsBlank(Fecha)), "Periodo", Text(Fecha, "yyyy-mm")),
-                              "Periodo",
-                              "Grupo"
+                              AddColumns(Filter(galCasos.AllItems, !IsBlank(Fecha)), Periodo, Text(Fecha, "yyyy-mm")),
+                              Periodo,
+                              Grupo
                           ),
-                          "Cant", CountRows(Grupo)
+                          Cant, CountRows(Grupo)
                       )
                   },
                   With(
                       {m: Max(g, Cant)},
-                      LastN(AddColumns(Sort(g, Periodo), "Pct", IfError(Cant / m, 0)), 12)
+                      LastN(AddColumns(Sort(g, Periodo), Pct, IfError(Cant / m, 0)), 12)
                   )
               )
             TemplateSize: =25
@@ -801,7 +801,7 @@ Screens:
       - hdrFecha:
           Control: Label@2.5.1
           Properties:
-            Text: ="Fecha"
+            Text: =Fecha
             Color: =Color.White
             FontWeight: =FontWeight.Bold
             Size: =9
