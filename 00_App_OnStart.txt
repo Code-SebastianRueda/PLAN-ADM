@@ -15,10 +15,10 @@ ClearCollect(
     AddColumns(
         AddColumns(
             TablaCasos;
-            "IdNum"; IfError(Value('ID CASO'); Blank());
-            "MesNum"; If(IsBlank(Trim(MES)); Blank(); IfError(Value(MES); With({p: Find(Left(Upper(Trim(MES)); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))));
-            "MesCierreNum"; If(IsBlank(Trim('MES DE CIERRE DEL CASO')); Blank(); IfError(Value('MES DE CIERRE DEL CASO'); With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))))
+            IdNum; IfError(Value('ID CASO'); Blank());
+            MesNum; If(IsBlank(Trim(MES)); Blank(); IfError(Value(MES); With({p: Find(Left(Upper(Trim(MES)); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))));
+            MesCierreNum; If(IsBlank(Trim('MES DE CIERRE DEL CASO')); Blank(); IfError(Value('MES DE CIERRE DEL CASO'); With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))))
         );
-        "Fecha"; IfError(Date(Value('AÑO'); MesNum; Coalesce(IfError(Value(DIA); Blank()); 1)); Blank())
+        Fecha; IfError(Date(Value('AÑO'); MesNum; Coalesce(IfError(Value(DIA); Blank()); 1)); Blank())
     )
 )
