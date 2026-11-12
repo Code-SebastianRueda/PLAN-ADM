@@ -7,7 +7,7 @@ Screens:
             colSelCasos,
             AddColumns(
                 Sort(colCasos, IdNum, SortOrder.Descending),
-                "Etiqueta", IdNum & " - " & ESTADO & " - " & CASUAL & " / " & SUBCASUAL
+                Etiqueta, IdNum & " - " & ESTADO & " - " & CASUAL & " / " & SUBCASUAL
             )
         );
         Reset(cmbCasoSel);
