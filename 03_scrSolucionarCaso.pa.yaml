@@ -1,29 +1,32 @@
 With(
-    {wId: Coalesce(Max(colCasos; IdNum); 0) + 1};
+    {
+        wCaso: cmbCasoSel.Selected;
+        wCerrado: ddEstado.Selected.Value = "CERRADO"
+    };
     IfError(
         Patch(
             TablaCasos;
-            Defaults(TablaCasos);
+            LookUp(TablaCasos; 'ID CASO' = wCaso.'ID CASO');
             {
-                'ID CASO': wId;
-                DIA: Day(dpFechaInicial.SelectedDate);
-                MES: Upper(Text(dpFechaInicial.SelectedDate; "mmmm"; "es-ES"));
-                'AÑO': Year(dpFechaInicial.SelectedDate);
-                'ANALISTA ENCARGADA UAC': cmbAnalistaUAC.Selected.Value;
-                SPONSOR: cmbSponsor.Selected.Value;
-                'ÁREA ENCARGADA': cmbArea.Selected.Value;
-                'ANALISTA ASIGANDO': cmbAsignado.Selected.Value;
-                CASUAL: cmbCausal.Selected.Value;
-                SUBCASUAL: cmbSubcausal.Selected.Value;
-                'RESPONSABLE OPERATIVO DEL ALERTAMIENTO': Trim(txtResponsable.Text);
-                'DESCRIPCION DEL RIESGO': Trim(txtDescripcion.Text);
-                'AVANCES DEL CASO': "";
-                'PLAN DE ACCION': Trim(txtPlanInicial.Text);
-                ESTADO: "ABIERTO"
+                ESTADO: ddEstado.Selected.Value;
+                'PLAN DE ACCION': Trim(txtAccion.Text);
+                'AVANCES DEL CASO': Trim(txtDetalle.Text);
+                'MES DE CIERRE DEL CASO': If(
+                    wCerrado;
+                    If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'MES DE CIERRE DEL CASO'); wCaso.'MES DE CIERRE DEL CASO'; Upper(Text(Today(); "mmmm"; "es-ES")));
+                    Blank()
+                );
+                'AÑO DE CIERRE DEL CASO': If(
+                    wCerrado;
+                    If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'AÑO DE CIERRE DEL CASO'); wCaso.'AÑO DE CIERRE DEL CASO'; Year(Today()));
+                    Blank()
+                );
+                'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ': If(wCerrado; ddRaiz.Selected.Value; "")
             }
         );
-        Notify("No se pudo guardar el caso: " & FirstError.Message; NotificationType.Error);
-        Notify("Caso " & wId & " creado correctamente"; NotificationType.Success; 3000);;
+        Notify("No se pudo guardar: " & FirstError.Message; NotificationType.Error);
+        Notify("Caso " & wCaso.IdNum & " actualizado (" & ddEstado.Selected.Value & ")"; NotificationType.Success; 3000);;
+        Set(varCaso; Blank());;
         Navigate(scrDashboard; ScreenTransition.Fade)
     )
 )
