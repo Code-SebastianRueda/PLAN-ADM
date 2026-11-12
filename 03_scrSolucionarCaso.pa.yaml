@@ -1,32 +1,74 @@
-With(
-    {
-        wCaso: cmbCasoSel.Selected;
-        wCerrado: ddEstado.Selected.Value = "CERRADO"
-    };
-    IfError(
-        Patch(
-            TablaCasos;
-            LookUp(TablaCasos; 'ID CASO' = wCaso.'ID CASO');
-            {
-                ESTADO: ddEstado.Selected.Value;
-                'PLAN DE ACCION': Trim(txtAccion.Text);
-                'AVANCES DEL CASO': Trim(txtDetalle.Text);
-                'MES DE CIERRE DEL CASO': If(
-                    wCerrado;
-                    If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'MES DE CIERRE DEL CASO'); wCaso.'MES DE CIERRE DEL CASO'; Upper(Text(Today(); "mmmm"; "es-ES")));
-                    Blank()
-                );
-                'AÑO DE CIERRE DEL CASO': If(
-                    wCerrado;
-                    If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'AÑO DE CIERRE DEL CASO'); wCaso.'AÑO DE CIERRE DEL CASO'; Year(Today()));
-                    Blank()
-                );
-                'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ': If(wCerrado; ddRaiz.Selected.Value; "")
-            }
-        );
-        Notify("No se pudo guardar: " & FirstError.Message; NotificationType.Error);
-        Notify("Caso " & wCaso.IdNum & " actualizado (" & ddEstado.Selected.Value & ")"; NotificationType.Success; 3000);;
-        Set(varCaso; Blank());;
-        Navigate(scrDashboard; ScreenTransition.Fade)
-    )
-)
+# ================= VENTANA DEL REPORTE =================
+- recVeloReporte:
+    Control: Rectangle@2.3.0
+    Properties:
+      Fill: =RGBA(0, 0, 0, 0.45)
+      OnSelect: =Set(varVerReporte, false)
+      Visible: =varVerReporte
+      Width: =Parent.Width
+      Height: =Parent.Height
+- recPopupReporte:
+    Control: Rectangle@2.3.0
+    Properties:
+      Fill: =Color.White
+      BorderColor: =clrPrimario
+      BorderThickness: =2
+      Visible: =varVerReporte
+      X: =(Parent.Width - 900) / 2
+      Y: =70
+      Width: =900
+      Height: =620
+- lblPopupReporte:
+    Control: Label@2.5.1
+    Properties:
+      Text: |-
+        ="Reporte: " & CountRows(galCasos.AllItems) & " casos (según filtros). Presione Copiar y pegue en Excel con Ctrl+V."
+      Color: =clrPrimario
+      FontWeight: =FontWeight.Semibold
+      Size: =13
+      Visible: =varVerReporte
+      X: =recPopupReporte.X + 20
+      Y: =recPopupReporte.Y + 10
+      Width: =860
+      Height: =40
+- txtReporte:
+    Control: Classic/TextInput@2.3.2
+    Properties:
+      Default: =varReporte
+      Mode: =TextMode.MultiLine
+      Size: =9
+      Visible: =varVerReporte
+      X: =recPopupReporte.X + 20
+      Y: =recPopupReporte.Y + 55
+      Width: =860
+      Height: =480
+- btnCopiarReporte:
+    Control: Classic/Button@2.2.0
+    Properties:
+      Text: ="Copiar"
+      OnSelect: |-
+        =Copy(varReporte);
+        Notify("Reporte copiado. Abra Excel y pegue con Ctrl+V.", NotificationType.Success, 4000)
+      Fill: =clrVerde
+      Color: =Color.White
+      HoverFill: =ColorFade(clrVerde, -0.15)
+      Visible: =varVerReporte
+      X: =recPopupReporte.X + 540
+      Y: =recPopupReporte.Y + 555
+      Width: =160
+      Height: =44
+- btnCerrarReporte:
+    Control: Classic/Button@2.2.0
+    Properties:
+      Text: ="Cerrar"
+      OnSelect: =Set(varVerReporte, false)
+      Fill: =Color.White
+      Color: =clrPrimario
+      BorderColor: =clrPrimario
+      BorderThickness: =1
+      HoverFill: =clrClaro
+      Visible: =varVerReporte
+      X: =recPopupReporte.X + 720
+      Y: =recPopupReporte.Y + 555
+      Width: =160
+      Height: =44
