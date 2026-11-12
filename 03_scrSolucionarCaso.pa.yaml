@@ -1,0 +1,410 @@
+Screens:
+  scrSolucionarCaso:
+    Properties:
+      Fill: =clrFondo
+      OnVisible: |-
+        =ClearCollect(
+            colSelCasos,
+            AddColumns(
+                Sort(colCasos, IdNum, SortOrder.Descending),
+                "Etiqueta", IdNum & " - " & ESTADO & " - " & CASUAL & " / " & SUBCASUAL
+            )
+        );
+        Reset(cmbCasoSel);
+        Reset(ddEstado);
+        Reset(txtAccion);
+        Reset(txtDetalle);
+        Reset(ddRaiz)
+    Children:
+      # ================= ENCABEZADO =================
+      - recHeaderS:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrPrimario
+            Width: =Parent.Width
+            Height: =50
+      - lblLogoS:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="CHUBB"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =18
+            X: =20
+            Width: =300
+            Height: =50
+      - recBarraS:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrClaro
+            Y: =50
+            Width: =Parent.Width
+            Height: =44
+      - btnVolverS:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="‹ Volver"
+            OnSelect: |-
+              =Set(varCaso, Blank());
+              Navigate(scrDashboard, ScreenTransition.Fade)
+            Fill: =Color.White
+            Color: =clrPrimario
+            BorderColor: =clrPrimario
+            BorderThickness: =1
+            HoverFill: =clrClaro
+            Size: =12
+            X: =20
+            Y: =56
+            Width: =110
+            Height: =32
+      - lblBarraS:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Solucionar Caso de Alertamiento"
+            Color: =clrPrimario
+            Size: =14
+            X: =150
+            Y: =50
+            Width: =400
+            Height: =44
+      - lblBuscarCaso:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Caso:"
+            Color: =clrPrimario
+            FontWeight: =FontWeight.Semibold
+            Size: =12
+            Align: =Align.Right
+            X: =700
+            Y: =56
+            Width: =70
+            Height: =32
+      - cmbCasoSel:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =colSelCasos
+            DefaultSelectedItems: =Filter(colSelCasos, IdNum = varCaso.IdNum)
+            DisplayFields: =["Etiqueta"]
+            SearchFields: =["Etiqueta"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Busque por ID, estado o causal..."
+            X: =776
+            Y: =56
+            Width: =570
+            Height: =32
+
+      # ================= CONTEXTO DEL CASO (izquierda) =================
+      - lblTituloS:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =If(
+                  IsBlank(cmbCasoSel.Selected.IdNum),
+                  "Seleccione un caso en la parte superior",
+                  "Solucionar Caso: " & cmbCasoSel.Selected.IdNum & " - " & cmbCasoSel.Selected.CASUAL & " / " & cmbCasoSel.Selected.SUBCASUAL
+              )
+            Color: =clrPrimario
+            FontWeight: =FontWeight.Semibold
+            Size: =17
+            X: =40
+            Y: =100
+            Width: =1300
+            Height: =40
+      - recContexto:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =40
+            Y: =145
+            Width: =620
+            Height: =500
+      - lblContextoTit:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Contexto del Caso"
+            FontWeight: =FontWeight.Semibold
+            Size: =13
+            Color: =clrPrimario
+            X: =55
+            Y: =150
+            Width: =590
+            Height: =32
+      - lblCtxEtiquetas:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              ="Fecha inicial:" & Char(10) &
+              "Estado actual:" & Char(10) &
+              "Sponsor:" & Char(10) &
+              "Área encargada:" & Char(10) &
+              "Analista UAC:" & Char(10) &
+              "Analista asignado:" & Char(10) &
+              "Causal:" & Char(10) &
+              "Subcausal:" & Char(10) &
+              "Resp. operativo:"
+            VerticalAlign: =VerticalAlign.Top
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            LineHeight: =1.6
+            X: =55
+            Y: =185
+            Width: =170
+            Height: =220
+      - lblCtxValores:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =With(
+                  {c: cmbCasoSel.Selected},
+                  If(
+                      IsBlank(c.IdNum),
+                      "",
+                      Text(c.Fecha, "dd/mm/yyyy") & Char(10) &
+                      c.ESTADO & Char(10) &
+                      c.SPONSOR & Char(10) &
+                      c.'ÁREA ENCARGADA' & Char(10) &
+                      c.'ANALISTA ENCARGADA UAC' & Char(10) &
+                      c.'ANALISTA ASIGANDO' & Char(10) &
+                      c.CASUAL & Char(10) &
+                      c.SUBCASUAL & Char(10) &
+                      c.'RESPONSABLE OPERATIVO DEL ALERTAMIENTO'
+                  )
+              )
+            VerticalAlign: =VerticalAlign.Top
+            Size: =11
+            LineHeight: =1.6
+            X: =225
+            Y: =185
+            Width: =420
+            Height: =220
+      - lblDescTit:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Descripción del riesgo"
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            X: =55
+            Y: =410
+            Width: =590
+            Height: =28
+      - lblDescValor:
+          Control: Label@2.5.1
+          Properties:
+            Text: =cmbCasoSel.Selected.'DESCRIPCION DEL RIESGO'
+            VerticalAlign: =VerticalAlign.Top
+            Overflow: =Overflow.Scroll
+            Fill: =clrFondo
+            Size: =11
+            X: =55
+            Y: =438
+            Width: =590
+            Height: =95
+      - lblCierreInfo:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =If(
+                  Upper(cmbCasoSel.Selected.ESTADO) = "CERRADO",
+                  "Cerrado en " & cmbCasoSel.Selected.'MES DE CIERRE DEL CASO' & "/" & cmbCasoSel.Selected.'AÑO DE CIERRE DEL CASO' &
+                  "  ·  ¿Solucionó la raíz?: " & Coalesce(cmbCasoSel.Selected.'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ', "-"),
+                  If(
+                      IsBlank(cmbCasoSel.Selected.Fecha),
+                      "",
+                      "Días abierto: " & DateDiff(cmbCasoSel.Selected.Fecha, Today(), TimeUnit.Days) &
+                      If(DateDiff(cmbCasoSel.Selected.Fecha, Today(), TimeUnit.Days) > gblDiasSLA, "  ⚠ SLA crítico", "")
+                  )
+              )
+            Color: =If(Upper(cmbCasoSel.Selected.ESTADO) = "CERRADO", clrVerde, clrRojo)
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            X: =55
+            Y: =545
+            Width: =590
+            Height: =60
+
+      # ================= FORMULARIO DE SOLUCIÓN (derecha) =================
+      - recFormulario:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =680
+            Y: =145
+            Width: =666
+            Height: =500
+      - lblFormTit:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Formulario de Solución"
+            Align: =Align.Center
+            FontWeight: =FontWeight.Semibold
+            Size: =13
+            Color: =clrPrimario
+            X: =680
+            Y: =150
+            Width: =666
+            Height: =32
+
+      # 1. Estado
+      - lblEstado:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="1. Estado de Solución *"
+            Size: =12
+            X: =700
+            Y: =185
+            Width: =300
+            Height: =28
+      - ddEstado:
+          Control: Classic/DropDown@2.3.1
+          Properties:
+            Items: =lstEstados
+            Default: =Coalesce(Upper(cmbCasoSel.Selected.ESTADO), "ABIERTO")
+            DisplayMode: =If(IsBlank(cmbCasoSel.Selected.IdNum), DisplayMode.Disabled, DisplayMode.Edit)
+            X: =700
+            Y: =213
+            Width: =300
+            Height: =36
+
+      # 4. ¿El plan solucionó el problema de raíz? (solo al cerrar)
+      - lblRaiz:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="¿El plan de acción solucionó el problema de raíz? *"
+            Visible: =ddEstado.Selected.Value = "CERRADO"
+            Size: =11
+            X: =1020
+            Y: =185
+            Width: =320
+            Height: =28
+      - ddRaiz:
+          Control: Classic/DropDown@2.3.1
+          Properties:
+            Items: =["SI", "NO"]
+            AllowEmptySelection: =true
+            Default: =Upper(cmbCasoSel.Selected.'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ')
+            Visible: =ddEstado.Selected.Value = "CERRADO"
+            X: =1020
+            Y: =213
+            Width: =200
+            Height: =36
+
+      # 2. Acción tomada / Plan de acción
+      - lblAccion:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="2. Acción tomada (Plan de acción)"
+            Size: =12
+            X: =700
+            Y: =260
+            Width: =620
+            Height: =28
+      - txtAccion:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            Default: =cmbCasoSel.Selected.'PLAN DE ACCION'
+            Mode: =TextMode.MultiLine
+            HintText: ="Ej. Investigar, contactar cliente, bloquear transacción..."
+            DisplayMode: =If(IsBlank(cmbCasoSel.Selected.IdNum), DisplayMode.Disabled, DisplayMode.Edit)
+            Size: =11
+            X: =700
+            Y: =288
+            Width: =626
+            Height: =110
+
+      # 3. Detalle de la resolución / Avances
+      - lblDetalle:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="3. Detalle de la Resolución (Avances del caso) *"
+            Size: =12
+            X: =700
+            Y: =408
+            Width: =620
+            Height: =28
+      - txtDetalle:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            Default: =cmbCasoSel.Selected.'AVANCES DEL CASO'
+            Mode: =TextMode.MultiLine
+            HintText: ="Describa los avances / resolución del caso"
+            DisplayMode: =If(IsBlank(cmbCasoSel.Selected.IdNum), DisplayMode.Disabled, DisplayMode.Edit)
+            Size: =11
+            X: =700
+            Y: =436
+            Width: =626
+            Height: =130
+
+      - btnGuardarCaso:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: =If(ddEstado.Selected.Value = "CERRADO", "Guardar y Cerrar Caso", "Guardar Cambios")
+            DisplayMode: |-
+              =If(
+                  !IsBlank(cmbCasoSel.Selected.IdNum) &&
+                  !IsBlank(ddEstado.Selected.Value) &&
+                  !IsBlank(Trim(txtDetalle.Text)) &&
+                  (ddEstado.Selected.Value <> "CERRADO" || !IsBlank(ddRaiz.Selected.Value)),
+                  DisplayMode.Edit,
+                  DisplayMode.Disabled
+              )
+            OnSelect: |-
+              =With(
+                  {
+                      wCaso: cmbCasoSel.Selected,
+                      wCerrado: ddEstado.Selected.Value = "CERRADO"
+                  },
+                  IfError(
+                      Patch(
+                          TablaCasos,
+                          LookUp(TablaCasos, 'ID CASO' = wCaso.'ID CASO'),
+                          {
+                              ESTADO: ddEstado.Selected.Value,
+                              'PLAN DE ACCION': Trim(txtAccion.Text),
+                              'AVANCES DEL CASO': Trim(txtDetalle.Text),
+                              'MES DE CIERRE DEL CASO': If(
+                                  wCerrado,
+                                  If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'MES DE CIERRE DEL CASO'), wCaso.'MES DE CIERRE DEL CASO', Upper(Text(Today(), "mmmm", "es-ES"))),
+                                  ""
+                              ),
+                              'AÑO DE CIERRE DEL CASO': If(
+                                  wCerrado,
+                                  If(Upper(wCaso.ESTADO) = "CERRADO" && !IsBlank(wCaso.'AÑO DE CIERRE DEL CASO'), wCaso.'AÑO DE CIERRE DEL CASO', Text(Year(Today()))),
+                                  ""
+                              ),
+                              'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ': If(wCerrado, ddRaiz.Selected.Value, "")
+                          }
+                      ),
+                      Notify("No se pudo guardar: " & FirstError.Message, NotificationType.Error),
+                      Notify("Caso " & wCaso.IdNum & " actualizado (" & ddEstado.Selected.Value & ")", NotificationType.Success, 3000);
+                      Set(varCaso, Blank());
+                      Navigate(scrDashboard, ScreenTransition.Fade)
+                  )
+              )
+            Fill: =clrVerde
+            Color: =Color.White
+            HoverFill: =ColorFade(clrVerde, -0.15)
+            DisabledFill: =RGBA(170, 195, 172, 1)
+            Size: =13
+            RadiusTopLeft: =6
+            RadiusTopRight: =6
+            RadiusBottomLeft: =6
+            RadiusBottomRight: =6
+            X: =1106
+            Y: =580
+            Width: =220
+            Height: =48
+      - lblRecuerde:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="* Recuerde guardar el cuadro de respuesta"
+            Size: =11
+            Italic: =true
+            Color: =RGBA(90, 90, 100, 1)
+            X: =700
+            Y: =590
+            Width: =400
+            Height: =30

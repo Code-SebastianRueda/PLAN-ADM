@@ -1,0 +1,1037 @@
+Screens:
+  scrDashboard:
+    Properties:
+      Fill: =clrFondo
+      OnVisible: |-
+        =Refresh(TablaCasos);
+        ClearCollect(
+            colCasos,
+            AddColumns(
+                AddColumns(
+                    TablaCasos,
+                    "IdNum", IfError(Value('ID CASO'), Blank()),
+                    "MesNum", If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
+                    "MesCierreNum", If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
+                ),
+                "Fecha", IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
+            )
+        )
+    Children:
+      # ================= ENCABEZADO =================
+      - recHeader:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrPrimario
+            Width: =Parent.Width
+            Height: =50
+      - lblLogo:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="CHUBB"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =18
+            X: =20
+            Width: =300
+            Height: =50
+      - recBreadcrumb:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrClaro
+            Y: =50
+            Width: =Parent.Width
+            Height: =36
+      - lblBreadcrumb:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Home / Procesos Alistamiento UAC"
+            Color: =clrPrimario
+            Size: =14
+            X: =20
+            Y: =50
+            Width: =600
+            Height: =36
+
+      # ================= FILTROS =================
+      - lblFAnalista:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Analista UAC"
+            Size: =11
+            X: =20
+            Y: =96
+            Width: =100
+            Height: =32
+      - cmbFAnalista:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =Sort(Distinct(Filter(colCasos, !IsBlank('ANALISTA ENCARGADA UAC')), 'ANALISTA ENCARGADA UAC'), Value)
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todos"
+            X: =120
+            Y: =96
+            Width: =200
+            Height: =32
+      - lblFSponsor:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Sponsor"
+            Size: =11
+            X: =340
+            Y: =96
+            Width: =100
+            Height: =32
+      - cmbFSponsor:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =Sort(Distinct(Filter(colCasos, !IsBlank(SPONSOR)), SPONSOR), Value)
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todos"
+            X: =440
+            Y: =96
+            Width: =200
+            Height: =32
+      - lblFArea:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Área"
+            Size: =11
+            X: =660
+            Y: =96
+            Width: =100
+            Height: =32
+      - cmbFArea:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =Sort(Distinct(Filter(colCasos, !IsBlank('ÁREA ENCARGADA')), 'ÁREA ENCARGADA'), Value)
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todas"
+            X: =760
+            Y: =96
+            Width: =200
+            Height: =32
+      - lblFCausal:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Causal"
+            Size: =11
+            X: =20
+            Y: =136
+            Width: =100
+            Height: =32
+      - cmbFCausal:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =Sort(Distinct(Filter(colCasos, !IsBlank(CASUAL)), CASUAL), Value)
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todas"
+            OnChange: =Reset(cmbFSubcausal)
+            X: =120
+            Y: =136
+            Width: =200
+            Height: =32
+      - lblFSubcausal:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Subcausal"
+            Size: =11
+            X: =340
+            Y: =136
+            Width: =100
+            Height: =32
+      - cmbFSubcausal:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: |-
+              =Sort(
+                  Distinct(
+                      Filter(
+                          colCasos,
+                          !IsBlank(SUBCASUAL) &&
+                          (IsBlank(cmbFCausal.Selected.Value) || CASUAL = cmbFCausal.Selected.Value)
+                      ),
+                      SUBCASUAL
+                  ),
+                  Value
+              )
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todas"
+            X: =440
+            Y: =136
+            Width: =200
+            Height: =32
+      - lblFEstado:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Estado"
+            Size: =11
+            X: =660
+            Y: =136
+            Width: =100
+            Height: =32
+      - cmbFEstado:
+          Control: Classic/ComboBox@2.4.0
+          Properties:
+            Items: =Sort(Distinct(Filter(colCasos, !IsBlank(ESTADO)), Upper(ESTADO)), Value)
+            DisplayFields: =["Value"]
+            SearchFields: =["Value"]
+            SelectMultiple: =false
+            InputTextPlaceholder: ="Todos"
+            X: =760
+            Y: =136
+            Width: =200
+            Height: =32
+      - lblFDesde:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Fecha Desde"
+            Size: =11
+            X: =20
+            Y: =176
+            Width: =100
+            Height: =32
+      - dpDesde:
+          Control: Classic/DatePicker@2.6.0
+          Properties:
+            DefaultDate: =Blank()
+            Format: ="dd/mm/yyyy"
+            InputTextPlaceholder: ="dd/mm/aaaa"
+            X: =120
+            Y: =176
+            Width: =200
+            Height: =32
+      - lblFHasta:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Fecha Hasta"
+            Size: =11
+            X: =340
+            Y: =176
+            Width: =100
+            Height: =32
+      - dpHasta:
+          Control: Classic/DatePicker@2.6.0
+          Properties:
+            DefaultDate: =Blank()
+            Format: ="dd/mm/yyyy"
+            InputTextPlaceholder: ="dd/mm/aaaa"
+            X: =440
+            Y: =176
+            Width: =200
+            Height: =32
+      - btnLimpiarFiltros:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Limpiar filtros"
+            OnSelect: |-
+              =Reset(cmbFAnalista);
+              Reset(cmbFSponsor);
+              Reset(cmbFArea);
+              Reset(cmbFCausal);
+              Reset(cmbFSubcausal);
+              Reset(cmbFEstado);
+              Reset(dpDesde);
+              Reset(dpHasta)
+            Fill: =Color.White
+            Color: =clrPrimario
+            BorderColor: =clrPrimario
+            BorderThickness: =1
+            HoverFill: =clrClaro
+            Size: =11
+            X: =760
+            Y: =176
+            Width: =200
+            Height: =32
+
+      # ================= BOTONES DE ACCIÓN =================
+      - btnCrearCaso:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Crear Caso de Alertamiento"
+            OnSelect: =Navigate(scrCrearCaso, ScreenTransition.Fade)
+            Fill: =clrVerde
+            Color: =Color.White
+            HoverFill: =ColorFade(clrVerde, -0.15)
+            Size: =12
+            RadiusTopLeft: =22
+            RadiusTopRight: =22
+            RadiusBottomLeft: =22
+            RadiusBottomRight: =22
+            X: =990
+            Y: =96
+            Width: =170
+            Height: =48
+      - btnSolucionarCaso:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Solucionar Caso de Alertamiento"
+            OnSelect: |-
+              =Set(varCaso, Blank());
+              Navigate(scrSolucionarCaso, ScreenTransition.Fade)
+            Fill: =clrAzul
+            Color: =Color.White
+            HoverFill: =ColorFade(clrAzul, -0.15)
+            Size: =12
+            RadiusTopLeft: =22
+            RadiusTopRight: =22
+            RadiusBottomLeft: =22
+            RadiusBottomRight: =22
+            X: =1170
+            Y: =96
+            Width: =176
+            Height: =48
+      - btnActualizar:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Actualizar Datos"
+            OnSelect: |-
+              =Refresh(TablaCasos);
+              ClearCollect(
+                  colCasos,
+                  AddColumns(
+                      AddColumns(
+                          TablaCasos,
+                          "IdNum", IfError(Value('ID CASO'), Blank()),
+                          "MesNum", If(IsBlank(Trim(MES)), Blank(), IfError(Value(MES), With({p: Find(Left(Upper(Trim(MES)), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4)))),
+                          "MesCierreNum", If(IsBlank(Trim('MES DE CIERRE DEL CASO')), Blank(), IfError(Value('MES DE CIERRE DEL CASO'), With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')), 3) & "|", "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}, If(IsBlank(p), Blank(), (p + 3) / 4))))
+                      ),
+                      "Fecha", IfError(Date(Value('AÑO'), MesNum, Coalesce(IfError(Value(DIA), Blank()), 1)), Blank())
+                  )
+              );
+              Notify("Datos actualizados (" & CountRows(colCasos) & " casos)", NotificationType.Success, 2000)
+            Fill: =clrSecundario
+            Color: =Color.White
+            HoverFill: =clrPrimario
+            Size: =11
+            RadiusTopLeft: =18
+            RadiusTopRight: =18
+            RadiusBottomLeft: =18
+            RadiusBottomRight: =18
+            X: =990
+            Y: =156
+            Width: =170
+            Height: =40
+      - btnReporte:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Text: ="Generar Reporte"
+            OnSelect: |-
+              =Copy(
+                  "ID CASO" & Char(9) & "FECHA" & Char(9) & "ANALISTA UAC" & Char(9) & "SPONSOR" & Char(9) &
+                  "AREA" & Char(9) & "ANALISTA ASIGNADO" & Char(9) & "CAUSAL" & Char(9) & "SUBCAUSAL" & Char(9) &
+                  "RESP. OPERATIVO" & Char(9) & "ESTADO" & Char(9) & "DESCRIPCION DEL RIESGO" & Char(9) &
+                  "AVANCES" & Char(9) & "PLAN DE ACCION" & Char(10) &
+                  Concat(
+                      galCasos.AllItems,
+                      IdNum & Char(9) & Text(Fecha, "dd/mm/yyyy") & Char(9) & 'ANALISTA ENCARGADA UAC' & Char(9) &
+                      SPONSOR & Char(9) & 'ÁREA ENCARGADA' & Char(9) & 'ANALISTA ASIGANDO' & Char(9) &
+                      CASUAL & Char(9) & SUBCASUAL & Char(9) & 'RESPONSABLE OPERATIVO DEL ALERTAMIENTO' & Char(9) &
+                      ESTADO & Char(9) & Substitute(Substitute('DESCRIPCION DEL RIESGO', Char(10), " "), Char(9), " ") & Char(9) &
+                      Substitute(Substitute('AVANCES DEL CASO', Char(10), " "), Char(9), " ") & Char(9) &
+                      Substitute(Substitute('PLAN DE ACCION', Char(10), " "), Char(9), " "),
+                      Char(10)
+                  )
+              );
+              Notify("Reporte copiado (" & CountRows(galCasos.AllItems) & " casos). Péguelo en Excel con Ctrl+V.", NotificationType.Success, 4000)
+            Fill: =clrSecundario
+            Color: =Color.White
+            HoverFill: =clrPrimario
+            Size: =11
+            RadiusTopLeft: =18
+            RadiusTopRight: =18
+            RadiusBottomLeft: =18
+            RadiusBottomRight: =18
+            X: =1170
+            Y: =156
+            Width: =176
+            Height: =40
+
+      # ================= RESUMEN =================
+      - recSeccionResumen:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrPrimario
+            Y: =216
+            Width: =Parent.Width
+            Height: =30
+      - lblSeccionResumen:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Resumen de Casos UAC"
+            Color: =Color.White
+            Size: =13
+            X: =20
+            Y: =216
+            Width: =500
+            Height: =30
+
+      # --- KPI 1: Pendientes ---
+      - recKpi1:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =20
+            Y: =256
+            Width: =160
+            Height: =160
+      - lblKpi1Titulo:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Total Casos Pendientes"
+            Align: =Align.Center
+            Size: =11
+            X: =20
+            Y: =262
+            Width: =160
+            Height: =40
+      - lblKpi1Valor:
+          Control: Label@2.5.1
+          Properties:
+            Text: =CountRows(Filter(galCasos.AllItems, Upper(ESTADO) <> "CERRADO"))
+            Align: =Align.Center
+            FontWeight: =FontWeight.Bold
+            Size: =36
+            Color: =clrTexto
+            X: =20
+            Y: =305
+            Width: =160
+            Height: =70
+      - lblKpi1Sub:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="de " & CountRows(galCasos.AllItems) & " casos"
+            Align: =Align.Center
+            Size: =10
+            Color: =RGBA(110, 110, 120, 1)
+            X: =20
+            Y: =375
+            Width: =160
+            Height: =30
+
+      # --- KPI 2: SLA crítico ---
+      - recKpi2:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =190
+            Y: =256
+            Width: =160
+            Height: =160
+      - lblKpi2Titulo:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Casos con SLA Crítico (> " & gblDiasSLA & " días)"
+            Align: =Align.Center
+            Size: =11
+            X: =190
+            Y: =262
+            Width: =160
+            Height: =40
+      - lblKpi2Valor:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =CountRows(
+                  Filter(
+                      galCasos.AllItems,
+                      Upper(ESTADO) <> "CERRADO" && !IsBlank(Fecha) && DateDiff(Fecha, Today(), TimeUnit.Days) > gblDiasSLA
+                  )
+              )
+            Align: =Align.Center
+            FontWeight: =FontWeight.Bold
+            Size: =36
+            Color: =clrTexto
+            X: =200
+            Y: =305
+            Width: =100
+            Height: =70
+      - icoKpi2:
+          Control: Classic/Icon@2.5.0
+          Properties:
+            Icon: =Icon.Warning
+            Color: =clrRojo
+            X: =300
+            Y: =320
+            Width: =40
+            Height: =40
+      - recKpi2BarraFondo:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =RGBA(230, 230, 235, 1)
+            X: =210
+            Y: =385
+            Width: =120
+            Height: =8
+      - recKpi2Barra:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrRojo
+            X: =210
+            Y: =385
+            Height: =8
+            Width: |-
+              =120 * IfError(
+                  Value(lblKpi2Valor.Text) / Value(lblKpi1Valor.Text),
+                  0
+              )
+
+      # --- KPI 3: Promedio resolución ---
+      - recKpi3:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =360
+            Y: =256
+            Width: =160
+            Height: =160
+      - lblKpi3Titulo:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Promedio Tiempo Resolución"
+            Align: =Align.Center
+            Size: =11
+            X: =360
+            Y: =262
+            Width: =160
+            Height: =40
+      - lblKpi3Valor:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =IfError(
+                  Text(
+                      Average(
+                          Filter(
+                              galCasos.AllItems,
+                              Upper(ESTADO) = "CERRADO" && !IsBlank(MesCierreNum) && !IsBlank(MesNum) &&
+                              !IsBlank('AÑO DE CIERRE DEL CASO') && !IsBlank('AÑO')
+                          ),
+                          (Value('AÑO DE CIERRE DEL CASO') * 12 + MesCierreNum) -
+                          (Value('AÑO') * 12 + MesNum)
+                      ),
+                      "0.0"
+                  ),
+                  "0.0"
+              )
+            Align: =Align.Center
+            FontWeight: =FontWeight.Bold
+            Size: =32
+            Color: =clrTexto
+            X: =360
+            Y: =305
+            Width: =160
+            Height: =70
+      - lblKpi3Sub:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="meses (casos cerrados)"
+            Align: =Align.Center
+            Size: =10
+            Color: =RGBA(110, 110, 120, 1)
+            X: =360
+            Y: =375
+            Width: =160
+            Height: =30
+
+      # --- KPI 4: Antigüedad de pendientes ---
+      - recKpi4:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =530
+            Y: =256
+            Width: =160
+            Height: =160
+      - lblKpi4Titulo:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Antigüedad Prom. Pendientes"
+            Align: =Align.Center
+            Size: =11
+            X: =530
+            Y: =262
+            Width: =160
+            Height: =40
+      - lblKpi4Valor:
+          Control: Label@2.5.1
+          Properties:
+            Text: |-
+              =IfError(
+                  Text(
+                      Average(
+                          Filter(galCasos.AllItems, Upper(ESTADO) <> "CERRADO" && !IsBlank(Fecha)),
+                          DateDiff(Fecha, Today(), TimeUnit.Days)
+                      ),
+                      "0.0"
+                  ),
+                  "0.0"
+              )
+            Align: =Align.Center
+            FontWeight: =FontWeight.Bold
+            Size: =32
+            Color: =clrTexto
+            X: =530
+            Y: =305
+            Width: =160
+            Height: =70
+      - lblKpi4Sub:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="días"
+            Align: =Align.Center
+            Size: =10
+            Color: =RGBA(110, 110, 120, 1)
+            X: =530
+            Y: =375
+            Width: =160
+            Height: =30
+
+      # --- Gráfico: Casos por Estado (barras horizontales) ---
+      - recGrafEstado:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =705
+            Y: =256
+            Width: =310
+            Height: =160
+      - lblGrafEstado:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Casos por Estado"
+            Align: =Align.Center
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            X: =705
+            Y: =258
+            Width: =310
+            Height: =28
+      - galEstados:
+          Control: Gallery@2.15.0
+          Variant: Vertical
+          Properties:
+            Items: |-
+              =With(
+                  {g: AddColumns(GroupBy(AddColumns(galCasos.AllItems, "EstadoU", Upper(ESTADO)), "EstadoU", "Grupo"), "Cant", CountRows(Grupo))},
+                  With(
+                      {m: Max(g, Cant)},
+                      AddColumns(Sort(g, Cant, SortOrder.Descending), "Pct", IfError(Cant / m, 0))
+                  )
+              )
+            TemplateSize: =28
+            TemplatePadding: =2
+            ShowScrollbar: =false
+            X: =710
+            Y: =288
+            Width: =300
+            Height: =124
+          Children:
+            - lblEstNombre:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =Coalesce(ThisItem.EstadoU, "(sin estado)")
+                  Size: =10
+                  Width: =90
+                  Height: =Parent.TemplateHeight
+            - recEstBarra:
+                Control: Rectangle@2.3.0
+                Properties:
+                  Fill: |-
+                    =Switch(
+                        ThisItem.EstadoU,
+                        "ABIERTO", clrPrimario,
+                        "EN PROCESO", clrSecundario,
+                        "ESCALADO", RGBA(232, 163, 23, 1),
+                        "CERRADO", clrVerde,
+                        RGBA(170, 170, 180, 1)
+                    )
+                  X: =95
+                  Y: =5
+                  Height: =Parent.TemplateHeight - 10
+                  Width: =Max(2, (Parent.TemplateWidth - 145) * ThisItem.Pct)
+            - lblEstCant:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.Cant
+                  FontWeight: =FontWeight.Bold
+                  Size: =10
+                  X: =recEstBarra.X + recEstBarra.Width + 4
+                  Width: =45
+                  Height: =Parent.TemplateHeight
+
+      # --- Gráfico: Casos por Mes (columnas) ---
+      - recGrafMes:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =Color.White
+            BorderColor: =clrClaro
+            BorderThickness: =1
+            X: =1025
+            Y: =256
+            Width: =321
+            Height: =160
+      - lblGrafMes:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Casos por Mes (últimos 12)"
+            Align: =Align.Center
+            FontWeight: =FontWeight.Semibold
+            Size: =11
+            X: =1025
+            Y: =258
+            Width: =321
+            Height: =28
+      - galMeses:
+          Control: Gallery@2.15.0
+          Variant: Horizontal
+          Properties:
+            Items: |-
+              =With(
+                  {
+                      g: AddColumns(
+                          GroupBy(
+                              AddColumns(Filter(galCasos.AllItems, !IsBlank(Fecha)), "Periodo", Text(Fecha, "yyyy-mm")),
+                              "Periodo",
+                              "Grupo"
+                          ),
+                          "Cant", CountRows(Grupo)
+                      )
+                  },
+                  With(
+                      {m: Max(g, Cant)},
+                      LastN(AddColumns(Sort(g, Periodo), "Pct", IfError(Cant / m, 0)), 12)
+                  )
+              )
+            TemplateSize: =25
+            TemplatePadding: =1
+            ShowScrollbar: =false
+            X: =1032
+            Y: =286
+            Width: =308
+            Height: =126
+          Children:
+            - recMesBarra:
+                Control: Rectangle@2.3.0
+                Properties:
+                  Fill: =clrPrimario
+                  X: =3
+                  Width: =Parent.TemplateWidth - 6
+                  Height: =Max(2, (Parent.TemplateHeight - 40) * ThisItem.Pct)
+                  Y: =Parent.TemplateHeight - 20 - Self.Height
+            - lblMesCant:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.Cant
+                  Align: =Align.Center
+                  Size: =8
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  Width: =Parent.TemplateWidth
+                  Height: =16
+                  Y: =recMesBarra.Y - 16
+            - lblMesNombre:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =Right(ThisItem.Periodo, 2) & "/" & Mid(ThisItem.Periodo, 3, 2)
+                  Align: =Align.Center
+                  Size: =7
+                  PaddingLeft: =0
+                  PaddingRight: =0
+                  Width: =Parent.TemplateWidth
+                  Height: =18
+                  Y: =Parent.TemplateHeight - 18
+
+      # ================= TABLA DE CASOS =================
+      - recSeccionTabla:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrPrimario
+            Y: =426
+            Width: =Parent.Width
+            Height: =30
+      - lblSeccionTabla:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Tabla de Casos Alertamiento  ·  " & CountRows(galCasos.AllItems) & " casos  ·  (clic en una fila para solucionarla)"
+            Color: =Color.White
+            Size: =13
+            X: =20
+            Y: =426
+            Width: =900
+            Height: =30
+      - recEncabezadoTabla:
+          Control: Rectangle@2.3.0
+          Properties:
+            Fill: =clrSecundario
+            X: =20
+            Y: =460
+            Width: =Parent.Width - 40
+            Height: =30
+      - hdrId:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="ID Caso"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =30
+            Y: =460
+            Width: =70
+            Height: =30
+      - hdrFecha:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Fecha"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =100
+            Y: =460
+            Width: =95
+            Height: =30
+      - hdrAnalistaUAC:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Analista Encargado UAC"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =195
+            Y: =460
+            Width: =150
+            Height: =30
+      - hdrSponsor:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Sponsor"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =345
+            Y: =460
+            Width: =130
+            Height: =30
+      - hdrArea:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Área"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =475
+            Y: =460
+            Width: =120
+            Height: =30
+      - hdrAsignado:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Analista Asignado"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =595
+            Y: =460
+            Width: =150
+            Height: =30
+      - hdrCausal:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Causal"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =745
+            Y: =460
+            Width: =120
+            Height: =30
+      - hdrSubcausal:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Subcausal"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =865
+            Y: =460
+            Width: =140
+            Height: =30
+      - hdrResponsable:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Resp. Operativo"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =1005
+            Y: =460
+            Width: =160
+            Height: =30
+      - hdrEstado:
+          Control: Label@2.5.1
+          Properties:
+            Text: ="Estado"
+            Color: =Color.White
+            FontWeight: =FontWeight.Bold
+            Size: =9
+            X: =1165
+            Y: =460
+            Width: =110
+            Height: =30
+      - galCasos:
+          Control: Gallery@2.15.0
+          Variant: Vertical
+          Properties:
+            Items: |-
+              =Sort(
+                  Filter(
+                      colCasos,
+                      (IsBlank(cmbFAnalista.Selected.Value) || 'ANALISTA ENCARGADA UAC' = cmbFAnalista.Selected.Value) &&
+                      (IsBlank(cmbFSponsor.Selected.Value) || SPONSOR = cmbFSponsor.Selected.Value) &&
+                      (IsBlank(cmbFArea.Selected.Value) || 'ÁREA ENCARGADA' = cmbFArea.Selected.Value) &&
+                      (IsBlank(cmbFCausal.Selected.Value) || CASUAL = cmbFCausal.Selected.Value) &&
+                      (IsBlank(cmbFSubcausal.Selected.Value) || SUBCASUAL = cmbFSubcausal.Selected.Value) &&
+                      (IsBlank(cmbFEstado.Selected.Value) || Upper(ESTADO) = cmbFEstado.Selected.Value) &&
+                      (IsBlank(dpDesde.SelectedDate) || Fecha >= dpDesde.SelectedDate) &&
+                      (IsBlank(dpHasta.SelectedDate) || Fecha <= dpHasta.SelectedDate)
+                  ),
+                  IdNum,
+                  SortOrder.Descending
+              )
+            TemplateSize: =30
+            TemplatePadding: =0
+            TemplateFill: =If(ThisItem.IsSelected, clrClaro, Color.White)
+            OnSelect: |-
+              =Set(varCaso, ThisItem);
+              Navigate(scrSolucionarCaso, ScreenTransition.Fade)
+            X: =20
+            Y: =490
+            Width: =Parent.Width - 40
+            Height: =Parent.Height - 495
+          Children:
+            - lnFila:
+                Control: Rectangle@2.3.0
+                Properties:
+                  Fill: =RGBA(225, 228, 235, 1)
+                  Y: =Parent.TemplateHeight - 1
+                  Width: =Parent.TemplateWidth
+                  Height: =1
+            - celId:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.'ID CASO'
+                  Size: =9
+                  X: =10
+                  Width: =70
+                  Height: =Parent.TemplateHeight
+            - celFecha:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =Text(ThisItem.Fecha, "dd/mm/yyyy")
+                  Size: =9
+                  X: =80
+                  Width: =95
+                  Height: =Parent.TemplateHeight
+            - celAnalistaUAC:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.'ANALISTA ENCARGADA UAC'
+                  Size: =9
+                  X: =175
+                  Width: =150
+                  Height: =Parent.TemplateHeight
+            - celSponsor:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.SPONSOR
+                  Size: =9
+                  X: =325
+                  Width: =130
+                  Height: =Parent.TemplateHeight
+            - celArea:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.'ÁREA ENCARGADA'
+                  Size: =9
+                  X: =455
+                  Width: =120
+                  Height: =Parent.TemplateHeight
+            - celAsignado:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.'ANALISTA ASIGANDO'
+                  Size: =9
+                  X: =575
+                  Width: =150
+                  Height: =Parent.TemplateHeight
+            - celCausal:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.CASUAL
+                  Size: =9
+                  X: =725
+                  Width: =120
+                  Height: =Parent.TemplateHeight
+            - celSubcausal:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.SUBCASUAL
+                  Size: =9
+                  X: =845
+                  Width: =140
+                  Height: =Parent.TemplateHeight
+            - celResponsable:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.'RESPONSABLE OPERATIVO DEL ALERTAMIENTO'
+                  Size: =9
+                  X: =985
+                  Width: =160
+                  Height: =Parent.TemplateHeight
+            - celEstado:
+                Control: Label@2.5.1
+                Properties:
+                  Text: =ThisItem.ESTADO
+                  Size: =9
+                  FontWeight: =FontWeight.Semibold
+                  Color: |-
+                    =Switch(
+                        Upper(ThisItem.ESTADO),
+                        "ABIERTO", clrPrimario,
+                        "EN PROCESO", clrSecundario,
+                        "ESCALADO", RGBA(200, 120, 0, 1),
+                        "CERRADO", clrTexto,
+                        clrTexto
+                    )
+                  X: =1145
+                  Width: =110
+                  Height: =Parent.TemplateHeight
+            - icoAbrir:
+                Control: Classic/Icon@2.5.0
+                Properties:
+                  Icon: =Icon.ChevronRight
+                  Color: =clrPrimario
+                  OnSelect: =Select(Parent)
+                  X: =Parent.TemplateWidth - 40
+                  Y: =5
+                  Width: =20
+                  Height: =20

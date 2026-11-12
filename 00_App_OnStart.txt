@@ -1,0 +1,11 @@
+Set(clrPrimario; RGBA(91; 33; 182; 1));;
+Set(clrSecundario; RGBA(124; 58; 237; 1));;
+Set(clrAzul; RGBA(30; 78; 152; 1));;
+Set(clrVerde; RGBA(46; 125; 50; 1));;
+Set(clrClaro; RGBA(237; 233; 254; 1));;
+Set(clrFondo; RGBA(244; 243; 252; 1));;
+Set(clrTexto; RGBA(33; 33; 52; 1));;
+Set(clrRojo; RGBA(211; 47; 47; 1));;
+Set(gblDiasSLA; 30);;
+Set(lstEstados; ["ABIERTO"; "EN PROCESO"; "ESCALADO"; "CERRADO"]);;
+Set(varCaso; Blank())
