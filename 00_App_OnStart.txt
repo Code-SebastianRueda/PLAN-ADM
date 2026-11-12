@@ -8,4 +8,17 @@ Set(clrTexto; RGBA(33; 33; 52; 1));;
 Set(clrRojo; RGBA(211; 47; 47; 1));;
 Set(gblDiasSLA; 30);;
 Set(lstEstados; ["ABIERTO"; "EN PROCESO"; "ESCALADO"; "CERRADO"]);;
-Set(varCaso; Blank())
+Set(varCaso; Blank());;
+Refresh(TablaCasos);;
+ClearCollect(
+    colCasos;
+    AddColumns(
+        AddColumns(
+            TablaCasos;
+            "IdNum"; IfError(Value('ID CASO'); Blank());
+            "MesNum"; If(IsBlank(Trim(MES)); Blank(); IfError(Value(MES); With({p: Find(Left(Upper(Trim(MES)); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))));
+            "MesCierreNum"; If(IsBlank(Trim('MES DE CIERRE DEL CASO')); Blank(); IfError(Value('MES DE CIERRE DEL CASO'); With({p: Find(Left(Upper(Trim('MES DE CIERRE DEL CASO')); 3) & "|"; "ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC|")}; If(IsBlank(p); Blank(); (p + 3) / 4))))
+        );
+        "Fecha"; IfError(Date(Value('AÑO'); MesNum; Coalesce(IfError(Value(DIA); Blank()); 1)); Blank())
+    )
+)
