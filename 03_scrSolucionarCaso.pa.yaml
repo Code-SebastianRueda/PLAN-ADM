@@ -1,74 +1,21 @@
-# ================= VENTANA DEL REPORTE =================
-- recVeloReporte:
-    Control: Rectangle@2.3.0
-    Properties:
-      Fill: =RGBA(0, 0, 0, 0.45)
-      OnSelect: =Set(varVerReporte, false)
-      Visible: =varVerReporte
-      Width: =Parent.Width
-      Height: =Parent.Height
-- recPopupReporte:
-    Control: Rectangle@2.3.0
-    Properties:
-      Fill: =Color.White
-      BorderColor: =clrPrimario
-      BorderThickness: =2
-      Visible: =varVerReporte
-      X: =(Parent.Width - 900) / 2
-      Y: =70
-      Width: =900
-      Height: =620
-- lblPopupReporte:
-    Control: Label@2.5.1
-    Properties:
-      Text: |-
-        ="Reporte: " & CountRows(galCasos.AllItems) & " casos (según filtros). Presione Copiar y pegue en Excel con Ctrl+V."
-      Color: =clrPrimario
-      FontWeight: =FontWeight.Semibold
-      Size: =13
-      Visible: =varVerReporte
-      X: =recPopupReporte.X + 20
-      Y: =recPopupReporte.Y + 10
-      Width: =860
-      Height: =40
-- txtReporte:
-    Control: Classic/TextInput@2.3.2
-    Properties:
-      Default: =varReporte
-      Mode: =TextMode.MultiLine
-      Size: =9
-      Visible: =varVerReporte
-      X: =recPopupReporte.X + 20
-      Y: =recPopupReporte.Y + 55
-      Width: =860
-      Height: =480
-- btnCopiarReporte:
-    Control: Classic/Button@2.2.0
-    Properties:
-      Text: ="Copiar"
-      OnSelect: |-
-        =Copy(varReporte);
-        Notify("Reporte copiado. Abra Excel y pegue con Ctrl+V.", NotificationType.Success, 4000)
-      Fill: =clrVerde
-      Color: =Color.White
-      HoverFill: =ColorFade(clrVerde, -0.15)
-      Visible: =varVerReporte
-      X: =recPopupReporte.X + 540
-      Y: =recPopupReporte.Y + 555
-      Width: =160
-      Height: =44
-- btnCerrarReporte:
-    Control: Classic/Button@2.2.0
-    Properties:
-      Text: ="Cerrar"
-      OnSelect: =Set(varVerReporte, false)
-      Fill: =Color.White
-      Color: =clrPrimario
-      BorderColor: =clrPrimario
-      BorderThickness: =1
-      HoverFill: =clrClaro
-      Visible: =varVerReporte
-      X: =recPopupReporte.X + 720
-      Y: =recPopupReporte.Y + 555
-      Width: =160
-      Height: =44
+Set(
+    varReporte;
+    "ID CASO" & Char(9) & "DIA" & Char(9) & "MES" & Char(9) & "AÑO" & Char(9) & "ANALISTA ENCARGADA UAC" & Char(9) &
+    "SPONSOR" & Char(9) & "ÁREA ENCARGADA" & Char(9) & "ANALISTA ASIGNADO" & Char(9) & "CAUSAL" & Char(9) &
+    "SUBCAUSAL" & Char(9) & "RESPONSABLE OPERATIVO" & Char(9) & "DESCRIPCION DEL RIESGO" & Char(9) &
+    "AVANCES DEL CASO" & Char(9) & "PLAN DE ACCION" & Char(9) & "ESTADO" & Char(9) &
+    "MES CIERRE" & Char(9) & "AÑO CIERRE" & Char(9) & "SOLUCIONÓ RAIZ" & Char(10) &
+    Concat(
+        galCasos.AllItems;
+        IdNum & Char(9) & DIA & Char(9) & MES & Char(9) & 'AÑO' & Char(9) & 'ANALISTA ENCARGADA UAC' & Char(9) &
+        SPONSOR & Char(9) & 'ÁREA ENCARGADA' & Char(9) & 'ANALISTA ASIGANDO' & Char(9) & CASUAL & Char(9) &
+        SUBCASUAL & Char(9) & 'RESPONSABLE OPERATIVO DEL ALERTAMIENTO' & Char(9) &
+        Substitute(Substitute(Substitute('DESCRIPCION DEL RIESGO'; Char(13); " "); Char(10); " "); Char(9); " ") & Char(9) &
+        Substitute(Substitute(Substitute('AVANCES DEL CASO'; Char(13); " "); Char(10); " "); Char(9); " ") & Char(9) &
+        Substitute(Substitute(Substitute('PLAN DE ACCION'; Char(13); " "); Char(10); " "); Char(9); " ") & Char(9) &
+        ESTADO & Char(9) & 'MES DE CIERRE DEL CASO' & Char(9) & 'AÑO DE CIERRE DEL CASO' & Char(9) &
+        'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ';
+        Char(10)
+    )
+);;
+Set(varVerReporte; true)
