@@ -1,432 +1,328 @@
-Screens:
-  scrCrearCaso:
-    Properties:
-      Fill: =clrFondo
-      OnVisible: |-
-        =Reset(cmbAnalistaUAC);
-        Reset(cmbAsignado);
-        Reset(cmbSponsor);
-        Reset(cmbArea);
-        Reset(cmbCausal);
-        Reset(cmbSubcausal);
-        Reset(txtResponsable);
-        Reset(dpFechaInicial);
-        Reset(txtDescripcion);
-        Reset(txtPlanInicial)
-    Children:
-      # ================= ENCABEZADO =================
-      - recHeaderC:
-          Control: Rectangle@2.3.0
-          Properties:
-            Fill: =clrPrimario
-            Width: =Parent.Width
-            Height: =50
-      - lblLogoC:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="CHUBB"
-            Color: =Color.White
-            FontWeight: =FontWeight.Bold
-            Size: =18
-            X: =20
-            Width: =300
-            Height: =50
-      - recBarraC:
-          Control: Rectangle@2.3.0
-          Properties:
-            Fill: =clrClaro
-            Y: =50
-            Width: =Parent.Width
-            Height: =44
-      - btnVolverC:
-          Control: Classic/Button@2.2.0
-          Properties:
-            Text: ="‹ Volver"
-            OnSelect: =Navigate(scrDashboard, ScreenTransition.Fade)
-            Fill: =Color.White
-            Color: =clrPrimario
-            BorderColor: =clrPrimario
-            BorderThickness: =1
-            HoverFill: =clrClaro
-            Size: =12
-            X: =20
-            Y: =56
-            Width: =110
-            Height: =32
-      - lblTituloC:
-          Control: Label@2.5.1
-          Properties:
-            Text: |-
-              ="Crear Caso: Nuevo  (ID " & (Coalesce(Max(colCasos, IdNum), 0) + 1) & ")"
-            Color: =clrPrimario
-            FontWeight: =FontWeight.Semibold
-            Size: =18
-            X: =150
-            Y: =50
-            Width: =800
-            Height: =44
-
-      # ================= COLUMNA IZQUIERDA =================
-      # 1. Analista encargada UAC
-      - lblAnalistaUAC:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="1. Analista encargada UAC *"
-            Size: =12
-            X: =40
-            Y: =105
-            Width: =600
-            Height: =28
-      - cmbAnalistaUAC:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(Distinct(colCasos, 'ANALISTA ENCARGADA UAC'), !IsBlank(Value)),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            X: =40
-            Y: =133
-            Width: =600
-            Height: =36
-
-      # 2. Analista asignado (responsable de la ejecución)
-      - lblAsignado:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="2. Asigne al responsable de la ejecución (Analista asignado) *"
-            Size: =12
-            X: =40
-            Y: =180
-            Width: =600
-            Height: =28
-      - cmbAsignado:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(Distinct(colCasos, 'ANALISTA ASIGANDO'), !IsBlank(Value)),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            X: =40
-            Y: =208
-            Width: =600
-            Height: =36
-
-      # 3. Sponsor
-      - lblSponsor:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="3. Sponsor *"
-            Size: =12
-            X: =40
-            Y: =255
-            Width: =600
-            Height: =28
-      - cmbSponsor:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(Distinct(colCasos, SPONSOR), !IsBlank(Value)),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            X: =40
-            Y: =283
-            Width: =600
-            Height: =36
-
-      # 4. Área encargada
-      - lblArea:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="4. Área encargada *"
-            Size: =12
-            X: =40
-            Y: =330
-            Width: =600
-            Height: =28
-      - cmbArea:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(Distinct(colCasos, 'ÁREA ENCARGADA'), !IsBlank(Value)),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            X: =40
-            Y: =358
-            Width: =600
-            Height: =36
-
-      # 5. Causal (motivo)
-      - lblCausal:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="5. Seleccione el motivo (Causal) *"
-            Size: =12
-            X: =40
-            Y: =405
-            Width: =600
-            Height: =28
-      - cmbCausal:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(Distinct(colCasos, CASUAL), !IsBlank(Value)),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            OnChange: =Reset(cmbSubcausal)
-            X: =40
-            Y: =433
-            Width: =600
-            Height: =36
-
-      # 6. Subcausal (sub motivo)
-      - lblSubcausal:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="6. Seleccione el sub motivo (Subcausal) *"
-            Size: =12
-            X: =40
-            Y: =480
-            Width: =600
-            Height: =28
-      - cmbSubcausal:
-          Control: Classic/ComboBox@2.4.0
-          Properties:
-            Items: |-
-              =Sort(
-                  Distinct(
-                      Filter(
-                          Distinct(Filter(colCasos, CASUAL = cmbCausal.Selected.Value), SUBCASUAL),
-                          !IsBlank(Value)
-                      ),
-                      Value
-                  ),
-                  Value
-              )
-            DisplayFields: =["Value"]
-            SearchFields: =["Value"]
-            SelectMultiple: =false
-            InputTextPlaceholder: ="Seleccione..."
-            DisplayMode: =If(IsBlank(cmbCausal.Selected.Value), DisplayMode.Disabled, DisplayMode.Edit)
-            X: =40
-            Y: =508
-            Width: =600
-            Height: =36
-
-      # 7. Responsable operativo del alertamiento
-      - lblResponsable:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="7. Responsable operativo del alertamiento *"
-            Size: =12
-            X: =40
-            Y: =555
-            Width: =600
-            Height: =28
-      - txtResponsable:
-          Control: Classic/TextInput@2.3.2
-          Properties:
-            Default: =""
-            HintText: ="Nombre del responsable operativo"
-            Size: =12
-            X: =40
-            Y: =583
-            Width: =600
-            Height: =36
-
-      # ================= COLUMNA DERECHA =================
-      # 8. Fecha inicial
-      - lblFechaInicial:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="8. Fecha inicial del alertamiento *"
-            Size: =12
-            X: =720
-            Y: =105
-            Width: =600
-            Height: =28
-      - dpFechaInicial:
-          Control: Classic/DatePicker@2.6.0
-          Properties:
-            DefaultDate: =Today()
-            Format: ="dd/mm/yyyy"
-            X: =720
-            Y: =133
-            Width: =300
-            Height: =36
-
-      # 9. Descripción del riesgo (problemática)
-      - lblDescripcion:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="9. Escriba la problemática (Descripción del riesgo) *"
-            Size: =12
-            X: =720
-            Y: =180
-            Width: =600
-            Height: =28
-      - txtDescripcion:
-          Control: Classic/TextInput@2.3.2
-          Properties:
-            Default: =""
-            Mode: =TextMode.MultiLine
-            HintText: ="Describa el riesgo / problemática detectada"
-            Size: =12
-            X: =720
-            Y: =208
-            Width: =600
-            Height: =160
-
-      # 10. Plan de acción inicial (opcional)
-      - lblPlanInicial:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="10. Plan de acción inicial (Opcional) / Cuadro de respuesta"
-            Size: =12
-            X: =720
-            Y: =380
-            Width: =600
-            Height: =28
-      - txtPlanInicial:
-          Control: Classic/TextInput@2.3.2
-          Properties:
-            Default: =""
-            Mode: =TextMode.MultiLine
-            HintText: ="Opcional"
-            Size: =12
-            X: =720
-            Y: =408
-            Width: =600
-            Height: =130
-
-      # ================= BOTONES =================
-      - btnCancelarC:
-          Control: Classic/Button@2.2.0
-          Properties:
-            Text: ="Cancelar"
-            OnSelect: =Navigate(scrDashboard, ScreenTransition.Fade)
-            Fill: =Color.White
-            Color: =clrPrimario
-            BorderColor: =clrPrimario
-            BorderThickness: =1
-            HoverFill: =clrClaro
-            Size: =13
-            RadiusTopLeft: =22
-            RadiusTopRight: =22
-            RadiusBottomLeft: =22
-            RadiusBottomRight: =22
-            X: =940
-            Y: =570
-            Width: =160
-            Height: =48
-      - btnEnviarCaso:
-          Control: Classic/Button@2.2.0
-          Properties:
-            Text: ="Enviar Caso"
-            DisplayMode: |-
-              =If(
-                  !IsBlank(cmbAnalistaUAC.Selected.Value) &&
-                  !IsBlank(cmbAsignado.Selected.Value) &&
-                  !IsBlank(cmbSponsor.Selected.Value) &&
-                  !IsBlank(cmbArea.Selected.Value) &&
-                  !IsBlank(cmbCausal.Selected.Value) &&
-                  !IsBlank(cmbSubcausal.Selected.Value) &&
-                  !IsBlank(Trim(txtResponsable.Text)) &&
-                  !IsBlank(dpFechaInicial.SelectedDate) &&
-                  !IsBlank(Trim(txtDescripcion.Text)),
-                  DisplayMode.Edit,
-                  DisplayMode.Disabled
-              )
-            OnSelect: |-
-              =With(
-                  {wId: Coalesce(Max(colCasos, IdNum), 0) + 1},
-                  IfError(
-                      Patch(
-                          TablaCasos,
-                          Defaults(TablaCasos),
-                          {
-                              'ID CASO': Text(wId),
-                              DIA: Text(Day(dpFechaInicial.SelectedDate)),
-                              MES: Upper(Text(dpFechaInicial.SelectedDate, "mmmm", "es-ES")),
-                              'AÑO': Text(Year(dpFechaInicial.SelectedDate)),
-                              'ANALISTA ENCARGADA UAC': cmbAnalistaUAC.Selected.Value,
-                              SPONSOR: cmbSponsor.Selected.Value,
-                              'ÁREA ENCARGADA': cmbArea.Selected.Value,
-                              'ANALISTA ASIGANDO': cmbAsignado.Selected.Value,
-                              CASUAL: cmbCausal.Selected.Value,
-                              SUBCASUAL: cmbSubcausal.Selected.Value,
-                              'RESPONSABLE OPERATIVO DEL ALERTAMIENTO': Trim(txtResponsable.Text),
-                              'DESCRIPCION DEL RIESGO': Trim(txtDescripcion.Text),
-                              'AVANCES DEL CASO': "",
-                              'PLAN DE ACCION': Trim(txtPlanInicial.Text),
-                              ESTADO: "ABIERTO"
-                          }
-                      ),
-                      Notify("No se pudo guardar el caso: " & FirstError.Message, NotificationType.Error),
-                      Notify("Caso " & wId & " creado correctamente", NotificationType.Success, 3000);
-                      Navigate(scrDashboard, ScreenTransition.Fade)
-                  )
-              )
-            Fill: =clrVerde
-            Color: =Color.White
-            HoverFill: =ColorFade(clrVerde, -0.15)
-            DisabledFill: =RGBA(190, 200, 190, 1)
-            Size: =14
-            RadiusTopLeft: =22
-            RadiusTopRight: =22
-            RadiusBottomLeft: =22
-            RadiusBottomRight: =22
-            X: =1120
-            Y: =570
-            Width: =200
-            Height: =48
-      - lblObligatorios:
-          Control: Label@2.5.1
-          Properties:
-            Text: ="* Campos obligatorios. El caso se crea con estado 'ABIERTO'."
-            Size: =11
-            Italic: =true
-            Color: =RGBA(90, 90, 100, 1)
-            X: =720
-            Y: =630
-            Width: =600
-            Height: =30
+// =============================================================================
+//  MESA DE SERVICIO – App.Formulas
+//  Pegar TODO este contenido en la propiedad  App > Formulas  de la Canvas App.
+//  Requiere: Funciones definidas por el usuario (Configuración > Actualizaciones).
+//  Esta versión NO usa tipos definidos por el usuario.
+//  Requiere la conexión al Excel (Excel Online Business) con todas sus tablas:
+//  TablaCasos, tblHistorial, tblUsuarios, tblCat*, tblConfig.
+//  Formato ESPAÑOL: ';' separa argumentos y ';;' termina cada definición.
+// =============================================================================
+ 
+// -----------------------------------------------------------------------------
+// 1. TEMA VISUAL (identidad de las imágenes de referencia)
+// -----------------------------------------------------------------------------
+clEncabezado   = ColorValue("#3B0A8F");;   // morado oscuro – barra superior
+clMorado       = ColorValue("#5B21D6");;   // acciones secundarias
+clMoradoClaro  = ColorValue("#EDE7FB");;
+clVerde        = ColorValue("#1E7D3A");;   // acción principal
+clVerdeHover   = ColorValue("#17652F");;
+clAzul         = ColorValue("#1F3B8C");;   // acción secundaria alternativa
+clFondo        = ColorValue("#F4F3F8");;   // fondo gris muy claro
+clTarjeta      = Color.White;;
+clBorde        = ColorValue("#DDD8EA");;
+clTexto        = ColorValue("#1F1F29");;
+clTextoSuave   = ColorValue("#6B6880");;
+clRojo         = ColorValue("#B91C1C");;
+clAmbar        = ColorValue("#B7791F");;
+clNaranja      = ColorValue("#C2410C");;
+clAzulEstado   = ColorValue("#1F6FEB");;
+fnTema         = Font.'Segoe UI';;
+tamTitulo      = 18;;
+tamTexto       = 12;;
+tamEtiqueta    = 11;;
+ 
+// -----------------------------------------------------------------------------
+// 2. CONSTANTES DE NEGOCIO
+// -----------------------------------------------------------------------------
+EST_ABIERTO     = "Abierto";;
+EST_EN_PROGRESO = "En Proceso";;
+EST_DEVUELTO    = "Devuelto";;
+EST_CERRADO     = "Cerrado";;
+EST_VENCIDO     = "Vencido";;
+ROL_ADMIN       = "ADMINISTRADOR";;
+ROL_ESPECIALISTA= "ESPECIALISTA";;
+ROL_SOLICITANTE = "SOLICITANTE";;
+OPCIONES_RAIZ   = ["Sí"; "No"; "Parcialmente"];;   // abiertos: "En evaluación" (convención del Excel original)
+LARGO_MIN_TEXTO = 10;;   // caracteres mínimos para motivo, avances y respuesta
+ 
+// -----------------------------------------------------------------------------
+// 4. FUNCIONES DE NEGOCIO (puras)
+// -----------------------------------------------------------------------------
+// ¿El correo está dentro de una lista "a@x.com;b@x.com"? (analistas compartidos)
+CorreoEnLista(lista: Text; correo: Text): Boolean =
+    !IsBlank(correo) &&
+    !IsBlank(LookUp(Split(Lower(Coalesce(lista; "")); ";"); Trim(Value) = Lower(Trim(correo))));;
+ 
+DiasRestantes(fechaLimite: Date): Number = DateDiff(Today(); fechaLimite; TimeUnit.Days);;
+ 
+DiasTranscurridos(fechaCreacion: DateTime; fechaCierre: DateTime): Number =
+    DateDiff(DateValue(Text(fechaCreacion; "yyyy-mm-dd"));
+             If(IsBlank(fechaCierre); Today(); DateValue(Text(fechaCierre; "yyyy-mm-dd")));
+             TimeUnit.Days);;
+ 
+// Fecha de cierre efectiva: los casos migrados del Excel original solo tienen mes/año de
+// cierre; se aproxima al día 15 de ese mes para el indicador de tiempo de resolución.
+FechaCierreEfectiva(fechaCierre: DateTime; anioCierre: Number; mesCierre: Number): DateTime =
+    If(!IsBlank(fechaCierre); fechaCierre;
+       !IsBlank(anioCierre) && !IsBlank(mesCierre); DateTime(anioCierre; mesCierre; 15; 0; 0; 0);
+       Blank());;
+ 
+// Un caso está vencido si el sistema lo marcó o si ya pasó su fecha límite sin cerrarse
+EstaVencido(estado: Text; fechaLimite: Date): Boolean =
+    estado = "Vencido" || (estado <> "Cerrado" && Today() > fechaLimite);;
+ 
+EsProximoAVencer(estado: Text; fechaLimite: Date; diasUmbral: Number): Boolean =
+    estado <> "Cerrado" && estado <> "Vencido" &&
+    DiasRestantes(fechaLimite) >= 0 && DiasRestantes(fechaLimite) <= diasUmbral;;
+ 
+EtiquetaEstado(estado: Text): Text =
+    Switch(estado; "Abierto"; "Abierto"; "En Proceso"; "En Proceso";
+           "Devuelto"; "Devuelto"; "Cerrado"; "Cerrado / Solucionado";
+           "Vencido"; "Vencido"; Coalesce(estado; "(sin estado)"));;
+ 
+ColorEstado(estado: Text): Color =
+    Switch(estado; "Abierto"; ColorValue("#1F6FEB"); "En Proceso"; ColorValue("#B7791F");
+           "Devuelto"; ColorValue("#C2410C"); "Cerrado"; ColorValue("#1E7D3A");
+           "Vencido"; ColorValue("#B91C1C"); ColorValue("#6B7280"));;
+ 
+TextoVencimiento(estado: Text; fechaLimite: Date): Text =
+    If(estado = "Cerrado"; "Cerrado";
+       With({d: DateDiff(Today(); fechaLimite; TimeUnit.Days)};
+            If(d < 0; "Vencido hace " & Text(-d) & " día(s)";
+               d = 0; "Vence hoy";
+               "Faltan " & Text(d) & " día(s)")));;
+ 
+ColorVencimiento(estado: Text; fechaLimite: Date; diasUmbral: Number): Color =
+    If(estado = "Cerrado"; ColorValue("#1E7D3A");
+       EstaVencido(estado; fechaLimite); ColorValue("#B91C1C");
+       DiasRestantes(fechaLimite) <= diasUmbral; ColorValue("#B7791F");
+       ColorValue("#6B6880"));;
+ 
+// Orden de atención: vencidos primero, luego por días restantes, cerrados al final
+PrioridadCaso(estado: Text; fechaLimite: Date): Number =
+    If(estado = "Cerrado"; 100000;
+       EstaVencido(estado; fechaLimite); -100000 + DiasRestantes(fechaLimite);
+       DiasRestantes(fechaLimite));;
+ 
+ 
+// -----------------------------------------------------------------------------
+// 5. CAPA DE ACCESO A DATOS (directo a las tablas del Excel)
+// -----------------------------------------------------------------------------
+ 
+Cfg(k: Text): Text = LookUp(tblConfig; CLAVE = k).VALOR;;
+ 
+MesNum(t: Text): Number = Switch(Lower(Trim(t)); "enero"; 1; "febrero"; 2; "marzo"; 3; "abril"; 4; "mayo"; 5; "junio"; 6; "julio"; 7; "agosto"; 8; "septiembre"; 9; "octubre"; 10; "noviembre"; 11; "diciembre"; 12; IfError(Value(t); Blank()));;
+ 
+NombreMes(n: Number): Text = Index(["Enero"; "Febrero"; "Marzo"; "Abril"; "Mayo"; "Junio"; "Julio"; "Agosto"; "Septiembre"; "Octubre"; "Noviembre"; "Diciembre"]; n).Value;;
+ 
+FechaHora(t: Text): DateTime = If(IsBlank(t) || t = "-"; Blank(); IfError(DateTimeValue(t; "en-US"); IfError(DateTimeValue(t); Blank())));;
+ 
+AhoraTxt(): Text = Text(Now(); "yyyy-mm-dd hh:mm:ss");;
+ 
+CargarSesion(): Void = {
+Set(gblCargando; true);;
+Set(gblErrorAcceso; "");;
+Set(gblCorreo; Lower(User().Email));;
+With({u: LookUp(tblUsuarios; Lower(Trim(CORREO)) = Lower(User().Email) && ACTIVO = "Sí")};
+If(IsBlank(u);
+Set(gblAutorizado; false);;
+Set(gblErrorAcceso; "Su cuenta " & User().Email & " no está autorizada para usar la Mesa de Servicio. Solicite acceso al administrador.");
+Set(gblSesion; {
+correo: Lower(User().Email); nombre: u.NOMBRE; rol: u.ROL; area: u.AREA;
+config: {nombreEmpresa: Cfg("NOMBRE_EMPRESA"); nombreApp: Cfg("NOMBRE_APP"); diasLimite: Value(Cfg("DIAS_LIMITE")); diasProximoVencer: Value(Cfg("DIAS_PROXIMO_VENCER")); urlApp: Cfg("URL_APP")};
+catalogos: {
+analistasUAC: ForAll(Filter(tblCatAnalistasUAC; ACTIVO = "Sí"); {nombre: NOMBRE});
+sponsors: ForAll(Filter(tblCatSponsors; ACTIVO = "Sí"); {nombre: NOMBRE});
+areas: ForAll(Filter(tblCatAreas; ACTIVO = "Sí"); {nombre: NOMBRE});
+analistasAsignados: ForAll(Filter(tblCatAnalistasAsignados; ACTIVO = "Sí"); {nombre: NOMBRE; correo: CORREO; area: AREA});
+causales: ForAll(Filter(tblCatCausales; ACTIVO = "Sí"); {nombre: NOMBRE});
+subcausales: ForAll(Filter(tblCatSubcausales; ACTIVO = "Sí"); {causal: CASUAL; nombre: NOMBRE});
+respOperativo: ForAll(Filter(tblCatRespOperativo; ACTIVO = "Sí"); {nombre: NOMBRE})
+}
+});;
+Set(gblEsAdmin; u.ROL = "ADMINISTRADOR");;
+Set(gblEsEspecialista; u.ROL = "ESPECIALISTA");;
+LimpiarFiltros();;
+Set(gblAutorizado; true)
+)
+);;
+Set(gblCargando; false)
+};;
+ 
+CargarCasos(): Void = {
+Set(gblCargando; true);;
+ClearCollect(colCasos;
+ForAll(Filter(TablaCasos; !IsBlank(IdNum) && (gblEsAdmin || Lower(Text(CORREO_CREADOR)) = gblCorreo || (gblEsEspecialista && CorreoEnLista(Text(CORREO_ANALISTA_ASIGNADO); gblCorreo))));
+{
+id: Value(Text(IdNum)); dia: Value(Text(DIA)); mes: MesNum(Text(MES)); anio: Value(Text('AÑO'));
+analistaUAC: Text('ANALISTA ENCARGADA UAC'); sponsor: Text(SPONSOR); area: Text('ÁREA ENCARGADA');
+analistaAsignado: Text('ANALISTA ASIGANDO'); causal: Text(CASUAL); subcausal: Text(SUBCASUAL);
+respOperativo: Text('RESPONSABLE OPERATIVO DEL ALERTAMIENTO'); descripcion: Text('DESCRIPCION DEL RIESGO');
+avances: Text('AVANCES DEL CASO'); planAccion: Text('PLAN DE ACCION'); estado: Text(ESTADO);
+mesCierre: MesNum(Text('MES DE CIERRE DEL CASO')); anioCierre: IfError(Value(Text('AÑO DE CIERRE DEL CASO')); Blank());
+solucionoRaiz: Text('EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ');
+fechaCreacion: FechaHora(Text(FECHA_CREACION)); correoCreador: Text(CORREO_CREADOR); nombreCreador: Text(NOMBRE_CREADOR);
+correoAnalista: Text(CORREO_ANALISTA_ASIGNADO); fechaAsignacion: FechaHora(Text(FECHA_ASIGNACION));
+fechaLimite: DateValue(Text(FechaHora(Text(FECHA_LIMITE)); "yyyy-mm-dd"); "en-US");
+fechaCierre: FechaHora(Text(FECHA_CIERRE)); motivoDevolucion: Text(MOTIVO_DEVOLUCION); estadoAnterior: Text(ESTADO_ANTERIOR);
+fechaVencimiento: FechaHora(Text(FECHA_VENCIMIENTO)); fechaEscalamiento: FechaHora(Text(FECHA_ESCALAMIENTO));
+escalamientoEnviado: Text(ESCALAMIENTO_ENVIADO); ultimaActualizacion: FechaHora(Text(ULTIMA_ACTUALIZACION));
+responsableUltimaActualizacion: Text(RESPONSABLE_ULTIMA_ACTUALIZACION); fechaDevolucion: FechaHora(Text(FECHA_DEVOLUCION));
+version: IfError(Value(Text(VERSION)); 1); origen: Text(ORIGEN_REGISTRO)
+}
+)
+);;
+Set(gblUltimaCarga; Now());;
+AplicarFiltros();;
+Set(gblCargando; false)
+};;
+ 
+AplicarCasoActualizado(json: Text): Void = {
+CargarCasos();;
+Set(gblCasoSel; LookUp(colCasos; id = Value(json)))
+};;
+ 
+LimpiarFiltros(): Void = {
+Set(gblFiltro; {
+analistaUAC: ""; sponsor: ""; area: ""; estado: ""; causal: "";
+subcausal: ""; analistaAsignado: "";
+desde: Date(1900; 1; 1); hasta: Date(2999; 12; 31)
+})
+};;
+ 
+AplicarFiltros(): Void = {
+ClearCollect(colFiltrados;
+Filter(colCasos;
+(IsBlank(gblFiltro.analistaUAC) || analistaUAC = gblFiltro.analistaUAC) &&
+(IsBlank(gblFiltro.sponsor) || sponsor = gblFiltro.sponsor) &&
+(IsBlank(gblFiltro.area) || area = gblFiltro.area) &&
+(IsBlank(gblFiltro.causal) || causal = gblFiltro.causal) &&
+(IsBlank(gblFiltro.subcausal) || subcausal = gblFiltro.subcausal) &&
+(IsBlank(gblFiltro.analistaAsignado) || analistaAsignado = gblFiltro.analistaAsignado) &&
+(IsBlank(gblFiltro.estado) ||
+If(gblFiltro.estado = "Próximos a vencer";
+EsProximoAVencer(estado; fechaLimite; gblSesion.config.diasProximoVencer);
+gblFiltro.estado = "Vencido"; EstaVencido(estado; fechaLimite);
+estado = gblFiltro.estado)) &&
+fechaCreacion >= gblFiltro.desde &&
+fechaCreacion < DateAdd(gblFiltro.hasta; 1; TimeUnit.Days)
+)
+)
+};;
+ 
+CargarHistorial(idCaso: Number): Void = {
+ClearCollect(colHistorial;
+Sort(
+ForAll(Filter(tblHistorial; Text(ID_CASO) = Text(idCaso));
+{idHistorial: Text(ID_HISTORIAL); idCaso: idCaso; fecha: FechaHora(Text(FECHA)); tipoEvento: Text(TIPO_EVENTO);
+estadoAnterior: Text(ESTADO_ANTERIOR); estadoNuevo: Text(ESTADO_NUEVO); detalle: Text(DETALLE);
+usuarioCorreo: Text(USUARIO_CORREO); usuarioNombre: Text(USUARIO_NOMBRE); origen: Text(ORIGEN)});
+fecha; SortOrder.Descending))
+};;
+ 
+RegistrarHistorial(id: Number; tipo: Text; ant: Text; nuevo: Text; detalle: Text): Void = {
+Patch(tblHistorial; Defaults(tblHistorial);
+{ID_HISTORIAL: Text(GUID()); ID_CASO: id; FECHA: AhoraTxt(); TIPO_EVENTO: tipo;
+ESTADO_ANTERIOR: ant; ESTADO_NUEVO: nuevo; DETALLE: Left(detalle; 4000);
+USUARIO_CORREO: gblCorreo; USUARIO_NOMBRE: gblSesion.nombre; ORIGEN: "App"})
+};;
+ 
+CrearCaso(payload: Text): Void = {
+Set(gblOkGestion; false);;
+Set(gblGuardando; true);;
+With({p: ParseJSON(payload)};
+With({existente: LookUp(TablaCasos; TOKEN_CREACION = Text(p.token))};
+If(!IsBlank(existente);
+CargarCasos();;
+Set(gblCasoSel; LookUp(colCasos; id = Value(Text(existente.IdNum))));;
+Set(gblOkGestion; true);
+With({nuevo: Max(Max(TablaCasos; Value(Text(IdNum))); Value(Cfg("ID_INICIAL")) - 1) + 1;
+fa: DateValue(Text(p.fechaAlertamiento); "en-US");
+an: LookUp(gblSesion.catalogos.analistasAsignados; nombre = Text(p.analistaAsignado) && (area = Text(p.area) || Upper(area) = "TODAS"))};
+IfError(
+Patch(TablaCasos; Defaults(TablaCasos); {
+IdNum: nuevo; DIA: Day(fa); MES: NombreMes(Month(fa)); 'AÑO': Year(fa);
+'ANALISTA ENCARGADA UAC': Text(p.analistaUAC); SPONSOR: Text(p.sponsor); 'ÁREA ENCARGADA': Text(p.area);
+'ANALISTA ASIGANDO': Text(p.analistaAsignado); CASUAL: Text(p.causal); SUBCASUAL: Text(p.subcausal);
+'RESPONSABLE OPERATIVO DEL ALERTAMIENTO': Text(p.respOperativo); 'DESCRIPCION DEL RIESGO': Text(p.descripcion);
+ESTADO: "Abierto"; 'MES DE CIERRE DEL CASO': "-"; 'AÑO DE CIERRE DEL CASO': "-";
+'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ': "En evaluación";
+FECHA_CREACION: AhoraTxt(); CORREO_CREADOR: gblCorreo; NOMBRE_CREADOR: gblSesion.nombre;
+CORREO_ANALISTA_ASIGNADO: an.correo; FECHA_ASIGNACION: AhoraTxt();
+FECHA_LIMITE: Text(DateAdd(Today(); gblSesion.config.diasLimite; TimeUnit.Days); "yyyy-mm-dd");
+ESCALAMIENTO_ENVIADO: "No"; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo;
+TOKEN_CREACION: Text(p.token); ORIGEN_REGISTRO: "APP"});;
+RegistrarHistorial(nuevo; "CREACION"; ""; "Abierto"; "Caso creado y asignado a " & Text(p.analistaAsignado));;
+CargarCasos();;
+Set(gblCasoSel; LookUp(colCasos; id = nuevo));;
+Set(gblOkGestion; true);;
+Notify("Caso #" & nuevo & " registrado. Fecha límite: " & Text(gblCasoSel.fechaLimite; "dd/mm/yyyy"); NotificationType.Success);
+Notify("No se pudo registrar el caso: " & FirstError.Message; NotificationType.Error)
+)
+)
+)
+)
+);;
+Set(gblGuardando; false)
+};;
+ 
+EjecutarGestion(payload: Text): Void = {
+Set(gblOkGestion; false);;
+Set(gblGuardando; true);;
+With({p: ParseJSON(payload)};
+With({id: Value(p.idCaso); acc: Text(p.accion); fila: LookUp(TablaCasos; Value(Text(IdNum)) = Value(p.idCaso))};
+With({est: Text(fila.ESTADO); v: IfError(Value(Text(fila.VERSION)); 1)};
+If(IsBlank(fila); Notify("El caso no existe."; NotificationType.Error);
+est = "Cerrado"; Notify("El caso está cerrado y no admite cambios."; NotificationType.Error);
+v <> Value(p.version); Notify("CONFLICTO: otra persona modificó el caso. Se recargaron los datos; repita la acción."; NotificationType.Error);; CargarCasos();
+IfError(
+Switch(acc;
+"GUARDAR";
+Patch(TablaCasos; fila; {
+'AVANCES DEL CASO': If(IsBlank(Text(p.avances)); Text(fila.'AVANCES DEL CASO'); Text(p.avances));
+'PLAN DE ACCION': If(IsBlank(Text(p.planAccion)); Text(fila.'PLAN DE ACCION'); Text(p.planAccion));
+ESTADO: If(Text(p.estadoDestino) = "En Proceso" && est in ["Abierto"; "Devuelto"]; "En Proceso"; est);
+ESTADO_ANTERIOR: If(Text(p.estadoDestino) = "En Proceso" && est in ["Abierto"; "Devuelto"]; est; If(Text(p.estadoDestino) = "En Proceso" && est = "Vencido"; "En Proceso"; Text(fila.ESTADO_ANTERIOR)));
+VERSION: v + 1; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo});;
+RegistrarHistorial(id; "AVANCE"; est; If(Text(p.estadoDestino) = "En Proceso" && est in ["Abierto"; "Devuelto"]; "En Proceso"; est); Text(p.avances) & If(IsBlank(Text(p.planAccion)); ""; " | Plan: " & Text(p.planAccion)));
+"DEVOLVER";
+Patch(TablaCasos; fila; {
+ESTADO: If(est = "Vencido"; "Vencido"; "Devuelto");
+ESTADO_ANTERIOR: If(est = "Vencido"; "Devuelto"; est);
+MOTIVO_DEVOLUCION: Text(p.motivoDevolucion); FECHA_DEVOLUCION: AhoraTxt();
+VERSION: v + 1; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo});;
+RegistrarHistorial(id; "DEVOLUCION"; est; "Devuelto"; "Devuelto por " & gblSesion.nombre & ": " & Text(p.motivoDevolucion));
+"RESPONDER_DEVOLUCION";
+Patch(TablaCasos; fila; {
+ESTADO: If(est = "Vencido"; "Vencido"; "En Proceso");
+ESTADO_ANTERIOR: If(est = "Vencido"; "En Proceso"; "Devuelto");
+VERSION: v + 1; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo});;
+RegistrarHistorial(id; "RESPUESTA_DEVOLUCION"; "Devuelto"; "En Proceso"; "Respuesta de " & gblSesion.nombre & ": " & Text(p.respuesta));
+"SOLUCIONAR";
+Patch(TablaCasos; fila; {
+ESTADO: "Cerrado"; ESTADO_ANTERIOR: est; FECHA_CIERRE: AhoraTxt();
+'MES DE CIERRE DEL CASO': NombreMes(Month(Today())); 'AÑO DE CIERRE DEL CASO': Text(Year(Today()));
+'EL PLAN DE ACCION SOLUCIONÓ EL PROBLEMA DE RAIZ': Text(p.solucionoRaiz);
+'AVANCES DEL CASO': Text(p.avances); 'PLAN DE ACCION': Text(p.planAccion);
+VERSION: v + 1; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo});;
+RegistrarHistorial(id; "CIERRE"; est; "Cerrado"; "Solucionado por " & gblSesion.nombre & ". ¿Solucionó la raíz?: " & Text(p.solucionoRaiz));
+"REASIGNAR";
+With({an: LookUp(gblSesion.catalogos.analistasAsignados; nombre = Text(p.nuevoAnalista) && (area = Text(fila.'ÁREA ENCARGADA') || Upper(area) = "TODAS"))};
+Patch(TablaCasos; fila; {
+'ANALISTA ASIGANDO': an.nombre; CORREO_ANALISTA_ASIGNADO: an.correo; FECHA_ASIGNACION: AhoraTxt();
+VERSION: v + 1; ULTIMA_ACTUALIZACION: AhoraTxt(); RESPONSABLE_ULTIMA_ACTUALIZACION: gblCorreo});;
+RegistrarHistorial(id; "REASIGNACION"; est; est; "Reasignado de " & Text(fila.'ANALISTA ASIGANDO') & " a " & an.nombre))
+);;
+CargarCasos();;
+Set(gblCasoSel; LookUp(colCasos; id = Value(p.idCaso)));;
+Set(gblOkGestion; true);;
+Notify("Cambios guardados en el caso #" & Text(p.idCaso); NotificationType.Success);
+Notify("No se pudo guardar: " & FirstError.Message; NotificationType.Error)
+)
+)
+)
+)
+);;
+Set(gblGuardando; false)
+};;
+ 
